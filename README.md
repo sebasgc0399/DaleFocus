@@ -28,9 +28,9 @@ Nota de estado actual: el flujo visual existe; la UI de login y el calculo real 
 ```
 [React + Vite + Tailwind]
          |
-         | HTTPS (Firebase ID token)
+         | httpsCallable (Firebase SDK, auth automatica)
          v
-[Cloud Functions Gen2 - onRequest]
+[Cloud Functions Gen2 - onCall (Callable)]
    | atomizeTask / completeSession / generateReward / getUserMetrics
    |
    +--> [Cloud Firestore]
@@ -49,7 +49,7 @@ Detalle completo en `Docs/02_DataModel.md`.
 
 ## Seguridad
 - Firestore Rules: ownership por usuario (`request.auth.uid`) para `users`, `tasks`, `steps`, `sessions` y `metrics`.
-- Functions HTTP: validan `Authorization: Bearer <Firebase ID token>` y exigen match entre `uid` del token y `userId` recibido.
+- Callable Functions (`onCall`): Firebase SDK valida automaticamente el token de auth. El `userId` se deriva de `request.auth.uid` en el servidor (nunca enviado por el cliente).
 - Pendiente en backend: rate limiting y endurecer validaciones de negocio adicionales.
 
 ## Setup Local
@@ -63,7 +63,7 @@ Detalle completo en `Docs/02_DataModel.md`.
 cd frontend
 npm install
 cp .env.example .env
-# Completar VITE_FIREBASE_* y, recomendado, VITE_FUNCTIONS_URL
+# Completar VITE_FIREBASE_*
 npm run dev
 ```
 
@@ -85,7 +85,6 @@ npm run serve
 | `frontend/.env` | `VITE_FIREBASE_STORAGE_BUCKET` | Si | Firebase Storage config |
 | `frontend/.env` | `VITE_FIREBASE_MESSAGING_SENDER_ID` | Si | Firebase config |
 | `frontend/.env` | `VITE_FIREBASE_APP_ID` | Si | Firebase config |
-| `frontend/.env` | `VITE_FUNCTIONS_URL` | Recomendado | Base URL de Functions (si no, usa default local en `api.js`) |
 | `functions/.env` | `OPENAI_API_KEY` | Si | Llamadas OpenAI en `atomizeTask` y `generateReward` |
 
 ## Deploy

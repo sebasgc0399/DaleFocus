@@ -1,11 +1,11 @@
 /**
  * index.js - Punto de entrada de Firebase Cloud Functions
  *
- * Exporta todas las Cloud Functions HTTP de DaleFocus:
- * - atomizeTask:     POST - Atomiza una tarea usando GPT-5.1
- * - completeSession: POST - Registra una sesion Pomodoro
- * - generateReward:  POST - Genera mensaje motivacional con GPT-5-mini
- * - getUserMetrics:  GET  - Calcula y devuelve metricas del usuario
+ * Exporta todas las Callable Functions (onCall) de DaleFocus:
+ * - atomizeTask:     Atomiza una tarea usando GPT-5.1
+ * - completeSession: Registra una sesion Pomodoro
+ * - generateReward:  Genera mensaje motivacional con GPT-5-mini
+ * - getUserMetrics:  Calcula y devuelve metricas del usuario
  *
  * Runtime: Node.js 20 | Region: us-central1 | Gen2 Cloud Functions
  */

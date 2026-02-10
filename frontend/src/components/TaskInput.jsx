@@ -13,7 +13,6 @@
  */
 import { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { useAuth } from '../contexts/AuthContext';
 import { atomizeTask } from '../services/api';
 
 function TaskInput() {
@@ -22,7 +21,6 @@ function TaskInput() {
   const [error, setError] = useState(null);
 
   const { barrier, setCurrentTask, setCurrentScreen } = useApp();
-  const { user } = useAuth();
 
   /**
    * Envia la tarea a la Cloud Function /atomizeTask
@@ -36,11 +34,9 @@ function TaskInput() {
     setError(null);
 
     try {
-      // TODO: Llamar a la Cloud Function /atomizeTask
       const result = await atomizeTask({
         taskTitle: taskTitle.trim(),
         barrier,
-        userId: user.uid,
       });
 
       // Guardar la tarea y sus pasos en el contexto

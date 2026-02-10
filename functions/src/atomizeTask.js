@@ -1,21 +1,18 @@
 /**
- * atomizeTask.js - Cloud Function para atomizar tareas con GPT-5.1
- *
- * Endpoint: POST /atomizeTask
+ * atomizeTask.js - Callable Function para atomizar tareas con GPT-5.1
  *
  * Recibe el titulo de la tarea y la barrera emocional del usuario.
  * Construye un prompt con las reglas de atomizacion segun la barrera
  * y llama a GPT-5.1 para generar un plan de pasos atomizados.
  * Guarda la tarea y los pasos en Firestore.
  *
- * Body esperado:
+ * Input (request.data):
  * {
  *   taskTitle: string,     // Titulo de la tarea
- *   barrier: string,       // 'overwhelmed' | 'uncertain' | 'bored' | 'perfectionism'
- *   userId: string         // ID del usuario autenticado
+ *   barrier: string        // 'overwhelmed' | 'uncertain' | 'bored' | 'perfectionism'
  * }
  *
- * Respuesta:
+ * Output:
  * {
  *   taskId: string,
  *   taskTitle: string,
@@ -27,10 +24,9 @@
  *   antiProcrastinationTip: string
  * }
  */
-import { onRequest } from 'firebase-functions/v2/https';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import OpenAI from 'openai';
 import { db } from './index.js';
-import { requireUserAuth } from './auth.js';
 
 // Barreras validas
 const VALID_BARRIERS = ['overwhelmed', 'uncertain', 'bored', 'perfectionism'];
@@ -40,7 +36,6 @@ const VALID_BARRIERS = ['overwhelmed', 'uncertain', 'bored', 'perfectionism'];
  * Incluye las reglas de atomizacion para cada barrera
  */
 function buildSystemPrompt() {
-  // TODO: Prompt completo basado en la Seccion 3 del Plan de Desarrollo
   return `Eres un asistente experto en combatir la procrastinacion mediante atomizacion inteligente de tareas.
 
 REGLAS DE ATOMIZACION segun barrera:
@@ -106,42 +101,35 @@ Genera ahora el plan atomizado en formato JSON segun las reglas.`;
 }
 
 /**
- * Cloud Function: atomizeTask
+ * Callable Function: atomizeTask
  */
-export const atomizeTask = onRequest(
-  { region: 'us-central1', cors: true },
-  async (req, res) => {
-    // Solo aceptar POST
-    if (req.method !== 'POST') {
-      res.status(405).json({ error: 'Metodo no permitido' });
-      return;
+export const atomizeTask = onCall(
+  { region: 'us-central1' },
+  async (request) => {
+    // Auth automatica via Firebase SDK
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Debes iniciar sesion');
     }
 
+    const userId = request.auth.uid;
+    const { taskTitle, barrier } = request.data;
+
+    // Validaciones
+    if (!taskTitle || !barrier) {
+      throw new HttpsError('invalid-argument', 'Faltan campos requeridos: taskTitle, barrier');
+    }
+
+    if (!VALID_BARRIERS.includes(barrier)) {
+      throw new HttpsError('invalid-argument', `Barrera invalida. Debe ser: ${VALID_BARRIERS.join(', ')}`);
+    }
+
+    if (taskTitle.length > 200) {
+      throw new HttpsError('invalid-argument', 'El titulo de la tarea no debe exceder 200 caracteres');
+    }
+
+    // TODO: Implementar rate limiting (max 5 atomizaciones/min por usuario)
+
     try {
-      const { taskTitle, barrier, userId } = req.body;
-
-      // Validaciones
-      if (!taskTitle || !barrier || !userId) {
-        res.status(400).json({ error: 'Faltan campos requeridos: taskTitle, barrier, userId' });
-        return;
-      }
-
-      if (!VALID_BARRIERS.includes(barrier)) {
-        res.status(400).json({ error: `Barrera invalida. Debe ser: ${VALID_BARRIERS.join(', ')}` });
-        return;
-      }
-
-      if (taskTitle.length > 200) {
-        res.status(400).json({ error: 'El titulo de la tarea no debe exceder 200 caracteres' });
-        return;
-      }
-
-      if (!await requireUserAuth(req, res, userId)) {
-        return;
-      }
-
-      // TODO: Implementar rate limiting (max 5 atomizaciones/min por usuario)
-
       // Llamar a GPT-5.1
       const openai = new OpenAI({
         apiKey: process.env.OPENAI_API_KEY,
@@ -188,13 +176,13 @@ export const atomizeTask = onRequest(
       await Promise.all(stepsPromises);
 
       // Devolver resultado completo
-      res.status(200).json({
+      return {
         taskId: taskRef.id,
         ...plan,
-      });
+      };
     } catch (error) {
       console.error('Error en atomizeTask:', error);
-      res.status(500).json({ error: 'Error interno al atomizar la tarea' });
+      throw new HttpsError('internal', 'Error interno al atomizar la tarea');
     }
   }
 );

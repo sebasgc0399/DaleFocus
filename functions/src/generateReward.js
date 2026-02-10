@@ -1,7 +1,5 @@
 /**
- * generateReward.js - Cloud Function para generar mensajes motivacionales
- *
- * Endpoint: POST /generateReward
+ * generateReward.js - Callable Function para generar mensajes motivacionales
  *
  * Usa GPT-5-mini para generar un mensaje de recompensa personalizado
  * segun la personalidad elegida por el usuario.
@@ -12,21 +10,19 @@
  * - Sargento:   estilo militar, estricto
  * - Meme-Lord:  humoristico y relajado
  *
- * Body esperado:
+ * Input (request.data):
  * {
- *   userId: string,       // ID del usuario
  *   personality: string,  // Personalidad del usuario
  *   context: string       // Que logro el usuario (ej: "completo un pomodoro de 25 min")
  * }
  *
- * Respuesta:
+ * Output:
  * {
  *   message: string       // Mensaje motivacional generado
  * }
  */
-import { onRequest } from 'firebase-functions/v2/https';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import OpenAI from 'openai';
-import { requireUserAuth } from './auth.js';
 
 // Descripciones de tono por personalidad para el prompt
 const PERSONALITY_TONES = {
@@ -36,27 +32,21 @@ const PERSONALITY_TONES = {
   'meme-lord': 'Humoristico y relajado, usa referencias de internet. Ejemplo: "Plot twist: este paso te tomara menos que un TikTok"',
 };
 
-export const generateReward = onRequest(
-  { region: 'us-central1', cors: true },
-  async (req, res) => {
-    if (req.method !== 'POST') {
-      res.status(405).json({ error: 'Metodo no permitido' });
-      return;
+export const generateReward = onCall(
+  { region: 'us-central1' },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Debes iniciar sesion');
+    }
+
+    const { personality, context } = request.data;
+
+    // Validaciones
+    if (!personality || !context) {
+      throw new HttpsError('invalid-argument', 'Faltan campos: personality, context');
     }
 
     try {
-      const { userId, personality, context } = req.body;
-
-      // Validaciones
-      if (!userId || !personality || !context) {
-        res.status(400).json({ error: 'Faltan campos: userId, personality, context' });
-        return;
-      }
-
-      if (!await requireUserAuth(req, res, userId)) {
-        return;
-      }
-
       const tone = PERSONALITY_TONES[personality] || PERSONALITY_TONES['coach-pro'];
 
       // Llamar a GPT-5-mini para generar el mensaje
@@ -92,14 +82,14 @@ Reglas:
 
       // TODO: Opcionalmente guardar el mensaje en Firestore para historial
 
-      res.status(200).json({ message });
+      return { message };
     } catch (error) {
       console.error('Error en generateReward:', error);
 
       // Fallback: mensaje generico si la IA falla
-      res.status(200).json({
+      return {
         message: 'Buen trabajo! Sigue asi, cada paso cuenta.',
-      });
+      };
     }
   }
 );

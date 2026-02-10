@@ -2,7 +2,6 @@
 
 ## Pre-Demo Checklist (30s antes)
 - Tener usuario autenticado en Firebase Auth.
-- Tener `VITE_FUNCTIONS_URL` apuntando al backend correcto.
 - Verificar que `OPENAI_API_KEY` este configurada en functions.
 - Abrir app en estado limpio (pantalla inicial del flujo).
 
@@ -49,7 +48,7 @@ Cierre sugerido:
 
 ### Bloque 3 (1:25 - 2:10) Arquitectura
 - Frontend React/Vite.
-- Cloud Functions Gen2 (`onRequest`) para logica y OpenAI.
+- Cloud Functions Gen2 (`onCall` Callable) para logica y OpenAI.
 - Firestore para `users`, `tasks`, `steps`, `sessions`.
 - Seguridad: Firestore Rules + verificacion de ID token en backend.
 
@@ -69,4 +68,4 @@ Cierre sugerido:
 ## Frases Cortas Para Q&A
 - "El core no es un chat: es un contrato JSON ejecutable por UI."
 - "La barrera emocional cambia la estrategia de pasos, no solo el copy."
-- "La seguridad se apoya en reglas por ownership y token verificado en cada endpoint."
+- "La seguridad se apoya en reglas por ownership y auth automatica de Callable Functions."

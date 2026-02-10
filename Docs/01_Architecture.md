@@ -4,9 +4,9 @@
 ```
 [Web App React + Vite + Tailwind]
           |
-          | HTTPS + Authorization: Bearer <ID Token>
+          | httpsCallable (Firebase SDK, auth automatica)
           v
-[Firebase Cloud Functions Gen2 (onRequest)]
+[Firebase Cloud Functions Gen2 (onCall - Callable)]
   - atomizeTask
   - completeSession
   - generateReward
@@ -19,7 +19,7 @@
  sessions/metrics*)     gpt-5-mini-2025-08-07)
 ```
 
-Nota: en esta base de codigo las funciones son HTTP `onRequest` (no callable).
+Las funciones usan `onCall` (Callable). Firebase SDK maneja auth, CORS y serializacion automaticamente.
 
 ## Flujo Principal
 1. Frontend captura barrera + tarea.
@@ -31,7 +31,7 @@ Nota: en esta base de codigo las funciones son HTTP `onRequest` (no callable).
 
 ## Decisiones Tecnicas
 - Firebase (Auth, Firestore, Functions, Hosting): reduce friccion de infraestructura y acelera MVP.
-- Functions HTTP: contrato simple por endpoint (`POST`/`GET`) consumible desde frontend.
+- Callable Functions (`onCall`): auth automatica via Firebase SDK, sin CORS ni URL manual.
 - Firestore: modelo flexible para tareas, pasos y sesiones, con reglas por ownership.
 - OpenAI separado por caso de uso:
   - Atomizador: `gpt-5-2025-08-07`.
@@ -39,8 +39,7 @@ Nota: en esta base de codigo las funciones son HTTP `onRequest` (no callable).
 
 ## Seguridad Implementada
 - Firestore Rules por `request.auth.uid` y ownership.
-- Guard de token en Functions (`functions/src/auth.js`) con verificacion `verifyIdToken`.
-- Verificacion de coherencia `uid` token == `userId` enviado.
+- Callable Functions (`onCall`): Firebase valida el token automaticamente. El `userId` se obtiene de `request.auth.uid` en el servidor, nunca enviado por el cliente.
 
 ## Limites Tecnicos Actuales
 - `getUserMetrics` aun no ejecuta agregaciones reales en Firestore.

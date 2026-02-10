@@ -16,12 +16,10 @@
  */
 import { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { useAuth } from '../contexts/AuthContext';
 import { getUserMetrics } from '../services/api';
 
 function Dashboard() {
   const { setCurrentScreen } = useApp();
-  const { user } = useAuth();
 
   const [metrics, setMetrics] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,8 +31,7 @@ function Dashboard() {
   useEffect(() => {
     const loadMetrics = async () => {
       try {
-        // TODO: Implementar llamada real a getUserMetrics
-        const data = await getUserMetrics(user.uid);
+        const data = await getUserMetrics();
         setMetrics(data);
       } catch (err) {
         console.error('Error cargando metricas:', err);
@@ -44,7 +41,7 @@ function Dashboard() {
     };
 
     loadMetrics();
-  }, [user.uid]);
+  }, []);
 
   if (isLoading) {
     return (

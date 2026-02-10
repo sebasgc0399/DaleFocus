@@ -1,7 +1,5 @@
 /**
- * getUserMetrics.js - Cloud Function para calcular metricas del usuario
- *
- * Endpoint: GET /getUserMetrics?userId=xxx
+ * getUserMetrics.js - Callable Function para calcular metricas del usuario
  *
  * Calcula y devuelve las metricas clave para el Dashboard:
  * - Focus Index: promedio de pomodoros por tarea completada
@@ -9,11 +7,12 @@
  * - Momentum: porcentaje de pasos completados vs planificados
  * - Barriers: frecuencia de cada barrera en la ultima semana
  *
- * Query params:
- * - userId: string (requerido)
- * - days: number (opcional, default 7 - rango de dias a consultar)
+ * Input (request.data):
+ * {
+ *   days: number  // (opcional, default 7) rango de dias a consultar
+ * }
  *
- * Respuesta:
+ * Output:
  * {
  *   focusIndex: number,
  *   timeToAction: number,
@@ -23,31 +22,20 @@
  *   tasksCompletedThisWeek: number
  * }
  */
-import { onRequest } from 'firebase-functions/v2/https';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { db } from './index.js';
-import { requireUserAuth } from './auth.js';
 
-export const getUserMetrics = onRequest(
-  { region: 'us-central1', cors: true },
-  async (req, res) => {
-    if (req.method !== 'GET') {
-      res.status(405).json({ error: 'Metodo no permitido' });
-      return;
+export const getUserMetrics = onCall(
+  { region: 'us-central1' },
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Debes iniciar sesion');
     }
 
+    const userId = request.auth.uid;
+    const days = parseInt(request.data?.days) || 7;
+
     try {
-      const userId = req.query.userId;
-      const days = parseInt(req.query.days) || 7;
-
-      if (!userId) {
-        res.status(400).json({ error: 'Se requiere userId' });
-        return;
-      }
-
-      if (!await requireUserAuth(req, res, userId)) {
-        return;
-      }
-
       // Rango de fechas para la consulta
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
@@ -94,10 +82,10 @@ export const getUserMetrics = onRequest(
         tasksCompletedThisWeek: 0,
       };
 
-      res.status(200).json(metrics);
+      return metrics;
     } catch (error) {
       console.error('Error en getUserMetrics:', error);
-      res.status(500).json({ error: 'Error interno al calcular metricas' });
+      throw new HttpsError('internal', 'Error interno al calcular metricas');
     }
   }
 );

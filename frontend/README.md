@@ -24,10 +24,8 @@ Archivo: `.env`
 - `VITE_FIREBASE_STORAGE_BUCKET`
 - `VITE_FIREBASE_MESSAGING_SENDER_ID`
 - `VITE_FIREBASE_APP_ID`
-- `VITE_FUNCTIONS_URL` (recomendado)
 
-Si `VITE_FUNCTIONS_URL` no existe, `src/services/api.js` usa por defecto:
-- `http://localhost:5001/dalefocus/us-central1`
+La comunicacion con Cloud Functions usa `httpsCallable` del Firebase SDK (no requiere URL manual).
 
 ## Scripts
 - `npm run dev` - servidor local Vite.

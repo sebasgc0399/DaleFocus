@@ -1,46 +1,18 @@
 /**
- * api.js - Servicio de comunicacion con Cloud Functions
+ * api.js - Servicio de comunicacion con Cloud Functions (Callable)
  *
- * Funciones para llamar a los endpoints de Firebase Cloud Functions:
+ * Usa httpsCallable del Firebase SDK para llamar a las Cloud Functions.
+ * La autenticacion se maneja automaticamente via Firebase Auth (no necesita
+ * token manual ni VITE_FUNCTIONS_URL).
+ *
+ * Funciones:
  * - atomizeTask: enviar tarea a GPT-5.1 para atomizacion
  * - completeSession: registrar sesion de Pomodoro completada
  * - generateReward: obtener mensaje motivacional de GPT-5-mini
  * - getUserMetrics: obtener metricas del dashboard
- *
- * Todas las funciones incluyen el token de autenticacion del usuario.
  */
-import { auth } from './firebase';
-
-// URL base de las Cloud Functions
-// TODO: Actualizar con la URL real del proyecto Firebase desplegado
-const FUNCTIONS_BASE_URL = import.meta.env.VITE_FUNCTIONS_URL
-  || 'http://localhost:5001/dalefocus/us-central1';
-
-/**
- * Helper para hacer peticiones autenticadas a Cloud Functions
- */
-async function authenticatedFetch(endpoint, data) {
-  const token = await auth.currentUser?.getIdToken();
-  if (!token) {
-    throw new Error('Usuario no autenticado');
-  }
-
-  const response = await fetch(`${FUNCTIONS_BASE_URL}/${endpoint}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `Error ${response.status}`);
-  }
-
-  return response.json();
-}
+import { httpsCallable } from 'firebase/functions';
+import { functions } from './firebase';
 
 /**
  * Atomizar una tarea usando GPT-5.1
@@ -49,66 +21,52 @@ async function authenticatedFetch(endpoint, data) {
  * @param {Object} params
  * @param {string} params.taskTitle - Titulo de la tarea
  * @param {string} params.barrier - Barrera emocional (overwhelmed|uncertain|bored|perfectionism)
- * @param {string} params.userId - ID del usuario
  * @returns {Promise<Object>} Plan atomizado con pasos
  */
-export async function atomizeTask({ taskTitle, barrier, userId }) {
-  // TODO: Implementar llamada real al endpoint
-  return authenticatedFetch('atomizeTask', { taskTitle, barrier, userId });
+export async function atomizeTask({ taskTitle, barrier }) {
+  const fn = httpsCallable(functions, 'atomizeTask');
+  const { data } = await fn({ taskTitle, barrier });
+  return data;
 }
 
 /**
  * Registrar una sesion Pomodoro completada o abandonada
  *
  * @param {Object} params
- * @param {string} params.userId - ID del usuario
  * @param {string|null} params.taskId - ID de la tarea asociada
  * @param {string|null} params.stepId - ID del paso asociado
  * @param {number} params.durationMinutes - Duracion en minutos
  * @param {boolean} params.completed - Si la sesion se completo normalmente
- * @returns {Promise<Object>} Confirmacion del registro
+ * @returns {Promise<Object>} Confirmacion del registro (sessionId, message)
  */
-export async function completeSession({ userId, taskId, stepId, durationMinutes, completed }) {
-  // TODO: Implementar llamada real al endpoint
-  return authenticatedFetch('completeSession', {
-    userId, taskId, stepId, durationMinutes, completed,
-  });
+export async function completeSession({ taskId, stepId, durationMinutes, completed }) {
+  const fn = httpsCallable(functions, 'completeSession');
+  const { data } = await fn({ taskId, stepId, durationMinutes, completed });
+  return data;
 }
 
 /**
  * Generar mensaje de recompensa motivacional usando GPT-5-mini
  *
  * @param {Object} params
- * @param {string} params.userId - ID del usuario
  * @param {string} params.personality - Personalidad del usuario
  * @param {string} params.context - Contexto de lo logrado
- * @returns {Promise<Object>} Mensaje motivacional
+ * @returns {Promise<Object>} Mensaje motivacional ({ message })
  */
-export async function generateReward({ userId, personality, context }) {
-  // TODO: Implementar llamada real al endpoint
-  return authenticatedFetch('generateReward', { userId, personality, context });
+export async function generateReward({ personality, context }) {
+  const fn = httpsCallable(functions, 'generateReward');
+  const { data } = await fn({ personality, context });
+  return data;
 }
 
 /**
  * Obtener metricas del usuario para el dashboard
  *
- * @param {string} userId - ID del usuario
+ * @param {number} [days=7] - Rango de dias a consultar
  * @returns {Promise<Object>} Metricas calculadas (focusIndex, timeToAction, momentum, barriers)
  */
-export async function getUserMetrics(userId) {
-  // TODO: Implementar llamada real al endpoint
-  const token = await auth.currentUser?.getIdToken();
-
-  const response = await fetch(`${FUNCTIONS_BASE_URL}/getUserMetrics?userId=${userId}`, {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}`);
-  }
-
-  return response.json();
+export async function getUserMetrics(days = 7) {
+  const fn = httpsCallable(functions, 'getUserMetrics');
+  const { data } = await fn({ days });
+  return data;
 }

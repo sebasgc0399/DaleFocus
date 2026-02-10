@@ -15,13 +15,11 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { useAuth } from '../contexts/AuthContext';
 import { DEFAULT_POMODORO_CONFIG } from '../utils/constants';
 import { completeSession } from '../services/api';
 
 function PomodoroTimer() {
   const { activeStep, currentTask, setCurrentScreen, setRewardMessage } = useApp();
-  const { user } = useAuth();
 
   // Configuracion del pomodoro (puede venir del perfil del usuario)
   const config = DEFAULT_POMODORO_CONFIG;
@@ -78,10 +76,8 @@ function PomodoroTimer() {
       const newCount = pomodoroCount + 1;
       setPomodoroCount(newCount);
 
-      // TODO: Registrar sesion completada en Firestore
       try {
         await completeSession({
-          userId: user.uid,
           taskId: currentTask?.taskId || null,
           stepId: activeStep?.id || null,
           durationMinutes: config.workMinutes,
@@ -122,7 +118,6 @@ function PomodoroTimer() {
       );
       try {
         await completeSession({
-          userId: user.uid,
           taskId: currentTask?.taskId || null,
           stepId: activeStep?.id || null,
           durationMinutes: elapsedMinutes,
