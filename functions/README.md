@@ -18,6 +18,10 @@ Archivo: `.env`
 
 - `OPENAI_API_KEY` (requerida para `atomizeTask` y `generateReward`)
 
+## Runtime (Gen2)
+- Region unica centralizada en `src/runtimeOptions.js` (`us-central1`).
+- `atomizeTask` usa `1GiB` para reducir cold starts percibidos (incluyendo LATAM/Colombia); esto incrementa costo por instancia.
+
 ## Endpoints HTTP exportados
 Desde `src/index.js`:
 - `POST /atomizeTask`

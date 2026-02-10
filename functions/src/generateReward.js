@@ -23,6 +23,7 @@
  */
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import OpenAI from 'openai';
+import { CALLABLE_RUNTIME } from './runtimeOptions.js';
 
 // Descripciones de tono por personalidad para el prompt
 const PERSONALITY_TONES = {
@@ -33,6 +34,22 @@ const PERSONALITY_TONES = {
 };
 const FUNCTION_NAME = 'generateReward';
 const OPENAI_TIMEOUT_MS = 12000;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY?.trim() ?? '';
+const OPENAI_CLIENT = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
+const SYSTEM_PROMPT_TEMPLATE = `Eres un asistente motivacional de la app DaleFocus. Genera mensajes de celebracion cortos (1-2 frases max).
+
+TONO: __TONE__
+
+Reglas:
+- Maximo 2 frases
+- Referencia brevemente lo que el usuario logro
+- Se positivo y energetico
+- No uses hashtags ni emojis excesivos (maximo 1 emoji)`;
+const SYSTEM_PROMPT = Object.freeze(
+  Object.fromEntries(
+    Object.entries(PERSONALITY_TONES).map(([key, tone]) => [key, SYSTEM_PROMPT_TEMPLATE.replace('__TONE__', tone)])
+  )
+);
 
 function invalidArgument(message) {
   return new HttpsError('invalid-argument', message);
@@ -80,7 +97,7 @@ async function createChatCompletionWithTimeout(openai, payload, timeoutMs) {
 }
 
 export const generateReward = onCall(
-  { region: 'us-central1' },
+  CALLABLE_RUNTIME.generateReward,
   async (request) => {
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'Debes iniciar sesion');
@@ -113,35 +130,21 @@ export const generateReward = onCall(
     const personalityKey = PERSONALITY_TONES[normalizedPersonality]
       ? normalizedPersonality
       : 'coach-pro';
-    const tone = PERSONALITY_TONES[personalityKey];
+    const systemPrompt = SYSTEM_PROMPT[personalityKey];
 
-    const openaiApiKey = process.env.OPENAI_API_KEY?.trim();
-    if (!openaiApiKey) {
+    if (!OPENAI_API_KEY || !OPENAI_CLIENT) {
       throw new HttpsError('failed-precondition', 'Servicio de IA no configurado');
     }
 
     try {
-      // Llamar a GPT-5-mini para generar el mensaje
-      const openai = new OpenAI({
-        apiKey: openaiApiKey,
-      });
-
       const completion = await createChatCompletionWithTimeout(
-        openai,
+        OPENAI_CLIENT,
         {
           model: 'gpt-5-mini-2025-08-07',
           messages: [
             {
               role: 'system',
-              content: `Eres un asistente motivacional de la app DaleFocus. Genera mensajes de celebracion cortos (1-2 frases max).
-
-TONO: ${tone}
-
-Reglas:
-- Maximo 2 frases
-- Referencia brevemente lo que el usuario logro
-- Se positivo y energetico
-- No uses hashtags ni emojis excesivos (maximo 1 emoji)`,
+              content: systemPrompt,
             },
             {
               role: 'user',

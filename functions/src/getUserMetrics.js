@@ -23,9 +23,10 @@
  * }
  */
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { CALLABLE_RUNTIME } from './runtimeOptions.js';
 
 export const getUserMetrics = onCall(
-  { region: 'us-central1' },
+  CALLABLE_RUNTIME.getUserMetrics,
   async (request) => {
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'Debes iniciar sesion');

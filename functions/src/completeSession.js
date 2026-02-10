@@ -20,6 +20,7 @@
  */
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { db } from './index.js';
+import { CALLABLE_RUNTIME } from './runtimeOptions.js';
 
 const FUNCTION_NAME = 'completeSession';
 const MAX_DURATION_MINUTES = 240;
@@ -46,7 +47,7 @@ function normalizeOptionalId(value, fieldName) {
 }
 
 export const completeSession = onCall(
-  { region: 'us-central1' },
+  CALLABLE_RUNTIME.completeSession,
   async (request) => {
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'Debes iniciar sesion');

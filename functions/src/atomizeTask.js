@@ -28,10 +28,63 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import OpenAI from 'openai';
 import { db } from './index.js';
+import { CALLABLE_RUNTIME } from './runtimeOptions.js';
 
 // Barreras validas
 const VALID_BARRIERS = ['overwhelmed', 'uncertain', 'bored', 'perfectionism'];
 const FUNCTION_NAME = 'atomizeTask';
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY?.trim() ?? '';
+const OPENAI_CLIENT = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
+const SYSTEM_PROMPT = `Eres un asistente experto en combatir la procrastinacion mediante atomizacion inteligente de tareas.
+
+REGLAS DE ATOMIZACION segun barrera:
+
+Si barrier === "overwhelmed":
+- Crea pasos de maximo 10 minutos cada uno.
+- El primer paso debe tomar <= 3 minutos.
+- Usa lenguaje ultra especifico ("Escribe X", no "Piensa en X").
+- Criterios de aceptacion tangibles y minimos.
+- Estrategia: "micro_wins"
+
+Si barrier === "uncertain":
+- El primer paso es siempre una exploracion de 15 min (investigar, leer, etc.).
+- El segundo paso: definir estructura basandose en lo investigado.
+- Evita decisiones importantes en los primeros 2 pasos.
+- Estrategia: "structured_exploration"
+
+Si barrier === "bored":
+- El primer paso debe ser muy facil y corto (~2 min) para iniciar.
+- El segundo paso puede ser mas sustancioso (15-20 min).
+- Usa tono energetico y coloquial ("Dale, comienza por...").
+- Estrategia: "quick_momentum"
+
+Si barrier === "perfectionism":
+- Siempre indica que el resultado puede ser un borrador o version 1.
+- Prohibido usar palabras como "perfecto", "definitivo".
+- El ultimo paso puede ser "pulir o iterar" (opcional si hay tiempo).
+- Estrategia: "good_enough_iterations"
+
+OUTPUT FORMAT (JSON) ESTRICTO:
+{
+  "taskTitle": string,
+  "barrier": string,
+  "strategy": string,
+  "estimatedPomodoros": number,
+  "steps": [
+    {
+      "id": "s1",
+      "title": string,
+      "action": string,
+      "estimateMinutes": number,
+      "acceptanceCriteria": [string],
+      "order": number
+    }
+  ],
+  "nextBestActionId": "s1",
+  "antiProcrastinationTip": string
+}
+
+Responde SOLO con el JSON. No incluyas texto adicional.`;
 
 function resolveOpenAITimeoutMs() {
   const parsed = Number.parseInt(process.env.OPENAI_TIMEOUT_MS ?? '', 10);
@@ -82,63 +135,6 @@ async function createChatCompletionWithTimeout(openai, payload, timeoutMs) {
 }
 
 /**
- * Construye el prompt del sistema para GPT-5.1
- * Incluye las reglas de atomizacion para cada barrera
- */
-function buildSystemPrompt() {
-  return `Eres un asistente experto en combatir la procrastinacion mediante atomizacion inteligente de tareas.
-
-REGLAS DE ATOMIZACION segun barrera:
-
-Si barrier === "overwhelmed":
-- Crea pasos de maximo 10 minutos cada uno.
-- El primer paso debe tomar <= 3 minutos.
-- Usa lenguaje ultra especifico ("Escribe X", no "Piensa en X").
-- Criterios de aceptacion tangibles y minimos.
-- Estrategia: "micro_wins"
-
-Si barrier === "uncertain":
-- El primer paso es siempre una exploracion de 15 min (investigar, leer, etc.).
-- El segundo paso: definir estructura basandose en lo investigado.
-- Evita decisiones importantes en los primeros 2 pasos.
-- Estrategia: "structured_exploration"
-
-Si barrier === "bored":
-- El primer paso debe ser muy facil y corto (~2 min) para iniciar.
-- El segundo paso puede ser mas sustancioso (15-20 min).
-- Usa tono energetico y coloquial ("Dale, comienza por...").
-- Estrategia: "quick_momentum"
-
-Si barrier === "perfectionism":
-- Siempre indica que el resultado puede ser un borrador o version 1.
-- Prohibido usar palabras como "perfecto", "definitivo".
-- El ultimo paso puede ser "pulir o iterar" (opcional si hay tiempo).
-- Estrategia: "good_enough_iterations"
-
-OUTPUT FORMAT (JSON) ESTRICTO:
-{
-  "taskTitle": string,
-  "barrier": string,
-  "strategy": string,
-  "estimatedPomodoros": number,
-  "steps": [
-    {
-      "id": "s1",
-      "title": string,
-      "action": string,
-      "estimateMinutes": number,
-      "acceptanceCriteria": [string],
-      "order": number
-    }
-  ],
-  "nextBestActionId": "s1",
-  "antiProcrastinationTip": string
-}
-
-Responde SOLO con el JSON. No incluyas texto adicional.`;
-}
-
-/**
  * Construye el prompt del usuario con los datos de la tarea
  */
 function buildUserPrompt(taskTitle, barrier) {
@@ -154,7 +150,7 @@ Genera ahora el plan atomizado en formato JSON segun las reglas.`;
  * Callable Function: atomizeTask
  */
 export const atomizeTask = onCall(
-  { region: 'us-central1' },
+  CALLABLE_RUNTIME.atomizeTask,
   async (request) => {
     // Auth automatica via Firebase SDK
     if (!request.auth) {
@@ -210,25 +206,19 @@ export const atomizeTask = onCall(
       }
     }
 
-    const openaiApiKey = process.env.OPENAI_API_KEY?.trim();
-    if (!openaiApiKey) {
+    if (!OPENAI_API_KEY || !OPENAI_CLIENT) {
       throw new HttpsError('failed-precondition', 'Servicio de IA no configurado');
     }
 
     // TODO: Implementar rate limiting (max 5 atomizaciones/min por usuario)
 
     try {
-      // Llamar a GPT-5.1
-      const openai = new OpenAI({
-        apiKey: openaiApiKey,
-      });
-
       const completion = await createChatCompletionWithTimeout(
-        openai,
+        OPENAI_CLIENT,
         {
           model: 'gpt-5-2025-08-07',
           messages: [
-            { role: 'system', content: buildSystemPrompt() },
+            { role: 'system', content: SYSTEM_PROMPT },
             { role: 'user', content: buildUserPrompt(normalizedTaskTitle, normalizedBarrier) },
           ],
           response_format: { type: 'json_object' },
