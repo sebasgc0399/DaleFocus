@@ -23,6 +23,7 @@
  */
 import { onRequest } from 'firebase-functions/v2/https';
 import { db } from './index.js';
+import { requireUserAuth } from './auth.js';
 
 export const completeSession = onRequest(
   { region: 'us-central1', cors: true },
@@ -41,7 +42,9 @@ export const completeSession = onRequest(
         return;
       }
 
-      // TODO: Verificar autenticacion del usuario
+      if (!await requireUserAuth(req, res, userId)) {
+        return;
+      }
 
       // Crear registro de sesion en Firestore
       const sessionData = {

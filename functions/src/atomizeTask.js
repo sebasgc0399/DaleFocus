@@ -30,6 +30,7 @@
 import { onRequest } from 'firebase-functions/v2/https';
 import OpenAI from 'openai';
 import { db } from './index.js';
+import { requireUserAuth } from './auth.js';
 
 // Barreras validas
 const VALID_BARRIERS = ['overwhelmed', 'uncertain', 'bored', 'perfectionism'];
@@ -135,7 +136,10 @@ export const atomizeTask = onRequest(
         return;
       }
 
-      // TODO: Verificar autenticacion (req.auth o token Bearer)
+      if (!await requireUserAuth(req, res, userId)) {
+        return;
+      }
+
       // TODO: Implementar rate limiting (max 5 atomizaciones/min por usuario)
 
       // Llamar a GPT-5.1

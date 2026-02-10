@@ -26,6 +26,7 @@
  */
 import { onRequest } from 'firebase-functions/v2/https';
 import OpenAI from 'openai';
+import { requireUserAuth } from './auth.js';
 
 // Descripciones de tono por personalidad para el prompt
 const PERSONALITY_TONES = {
@@ -52,7 +53,9 @@ export const generateReward = onRequest(
         return;
       }
 
-      // TODO: Verificar autenticacion
+      if (!await requireUserAuth(req, res, userId)) {
+        return;
+      }
 
       const tone = PERSONALITY_TONES[personality] || PERSONALITY_TONES['coach-pro'];
 

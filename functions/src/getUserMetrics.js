@@ -25,6 +25,7 @@
  */
 import { onRequest } from 'firebase-functions/v2/https';
 import { db } from './index.js';
+import { requireUserAuth } from './auth.js';
 
 export const getUserMetrics = onRequest(
   { region: 'us-central1', cors: true },
@@ -43,7 +44,9 @@ export const getUserMetrics = onRequest(
         return;
       }
 
-      // TODO: Verificar autenticacion
+      if (!await requireUserAuth(req, res, userId)) {
+        return;
+      }
 
       // Rango de fechas para la consulta
       const startDate = new Date();
