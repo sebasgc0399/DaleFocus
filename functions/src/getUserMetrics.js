@@ -23,7 +23,6 @@
  * }
  */
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { db } from './index.js';
 
 export const getUserMetrics = onCall(
   { region: 'us-central1' },
@@ -32,14 +31,28 @@ export const getUserMetrics = onCall(
       throw new HttpsError('unauthenticated', 'Debes iniciar sesion');
     }
 
-    const userId = request.auth.uid;
-    const days = parseInt(request.data?.days) || 7;
+    const rawDays = request.data?.days;
+    let days = 7;
+
+    if (rawDays !== undefined && rawDays !== null) {
+      const parsedDays = Number(rawDays);
+
+      if (
+        !Number.isFinite(parsedDays) ||
+        !Number.isInteger(parsedDays) ||
+        parsedDays < 1 ||
+        parsedDays > 30
+      ) {
+        throw new HttpsError(
+          'invalid-argument',
+          'days inválido. Debe ser un entero entre 1 y 30.'
+        );
+      }
+
+      days = parsedDays;
+    }
 
     try {
-      // Rango de fechas para la consulta
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - days);
-
       // TODO: Consultar Firestore para calcular metricas reales
       // Las siguientes son las consultas necesarias:
 
@@ -67,25 +80,21 @@ export const getUserMetrics = onCall(
       // 4. Barreras = conteo de cada tipo en el periodo
       // TODO: Contar barreras de las tareas creadas en el periodo
 
-      // Respuesta placeholder (reemplazar con datos reales)
-      const metrics = {
-        focusIndex: 0,
-        timeToAction: 0,
-        momentum: 0,
-        barriers: {
-          overwhelmed: 0,
-          uncertain: 0,
-          bored: 0,
-          perfectionism: 0,
-        },
-        pomodorosThisWeek: 0,
-        tasksCompletedThisWeek: 0,
-      };
-
-      return metrics;
+      // Placeholder explicito hasta implementar el calculo real
+      throw new HttpsError(
+        'failed-precondition',
+        'Métricas aún no disponibles. Primero registra sesiones y completa tareas; vuelve a intentarlo en unos días.',
+        { fn: 'getUserMetrics', days }
+      );
     } catch (error) {
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+
       console.error('Error en getUserMetrics:', error);
-      throw new HttpsError('internal', 'Error interno al calcular metricas');
+      throw new HttpsError('internal', 'Error interno al calcular métricas', {
+        fn: 'getUserMetrics',
+      });
     }
   }
 );

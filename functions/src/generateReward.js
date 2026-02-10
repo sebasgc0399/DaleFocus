@@ -31,6 +31,53 @@ const PERSONALITY_TONES = {
   'sargento': 'Estilo militar, estricto pero con respeto. Ejemplo: "3 minutos. Ahora. Sin excusas. A darle!"',
   'meme-lord': 'Humoristico y relajado, usa referencias de internet. Ejemplo: "Plot twist: este paso te tomara menos que un TikTok"',
 };
+const FUNCTION_NAME = 'generateReward';
+const OPENAI_TIMEOUT_MS = 12000;
+
+function invalidArgument(message) {
+  return new HttpsError('invalid-argument', message);
+}
+
+function makeOpenAITimeoutError(timeoutMs) {
+  const timeoutError = new Error(`OpenAI timeout after ${timeoutMs}ms`);
+  timeoutError.code = 'OPENAI_TIMEOUT';
+  return timeoutError;
+}
+
+function isOpenAITimeoutOrAbort(error) {
+  return (
+    error?.code === 'OPENAI_TIMEOUT' ||
+    error?.name === 'AbortError' ||
+    error?.name === 'APIConnectionTimeoutError' ||
+    error?.name === 'APIUserAbortError'
+  );
+}
+
+async function createChatCompletionWithTimeout(openai, payload, timeoutMs) {
+  const controller = new AbortController();
+  let timeoutId = null;
+
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      controller.abort();
+      reject(makeOpenAITimeoutError(timeoutMs));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([
+      openai.chat.completions.create(payload, {
+        signal: controller.signal,
+        timeout: timeoutMs,
+      }),
+      timeoutPromise,
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
 
 export const generateReward = onCall(
   { region: 'us-central1' },
@@ -39,27 +86,54 @@ export const generateReward = onCall(
       throw new HttpsError('unauthenticated', 'Debes iniciar sesion');
     }
 
-    const { personality, context } = request.data;
+    const { personality, context } = request.data ?? {};
 
-    // Validaciones
-    if (!personality || !context) {
-      throw new HttpsError('invalid-argument', 'Faltan campos: personality, context');
+    if (typeof personality !== 'string') {
+      throw invalidArgument('personality inválido');
+    }
+
+    const normalizedPersonality = personality.trim();
+    if (!normalizedPersonality) {
+      throw invalidArgument('personality inválido');
+    }
+
+    if (typeof context !== 'string') {
+      throw invalidArgument('context inválido');
+    }
+
+    const normalizedContext = context.trim();
+    if (!normalizedContext) {
+      throw invalidArgument('context inválido');
+    }
+
+    if (normalizedContext.length > 300) {
+      throw invalidArgument('context inválido (max 300 caracteres)');
+    }
+
+    const personalityKey = PERSONALITY_TONES[normalizedPersonality]
+      ? normalizedPersonality
+      : 'coach-pro';
+    const tone = PERSONALITY_TONES[personalityKey];
+
+    const openaiApiKey = process.env.OPENAI_API_KEY?.trim();
+    if (!openaiApiKey) {
+      throw new HttpsError('failed-precondition', 'Servicio de IA no configurado');
     }
 
     try {
-      const tone = PERSONALITY_TONES[personality] || PERSONALITY_TONES['coach-pro'];
-
       // Llamar a GPT-5-mini para generar el mensaje
       const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
+        apiKey: openaiApiKey,
       });
 
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-5-mini-2025-08-07',
-        messages: [
-          {
-            role: 'system',
-            content: `Eres un asistente motivacional de la app DaleFocus. Genera mensajes de celebracion cortos (1-2 frases max).
+      const completion = await createChatCompletionWithTimeout(
+        openai,
+        {
+          model: 'gpt-5-mini-2025-08-07',
+          messages: [
+            {
+              role: 'system',
+              content: `Eres un asistente motivacional de la app DaleFocus. Genera mensajes de celebracion cortos (1-2 frases max).
 
 TONO: ${tone}
 
@@ -68,28 +142,59 @@ Reglas:
 - Referencia brevemente lo que el usuario logro
 - Se positivo y energetico
 - No uses hashtags ni emojis excesivos (maximo 1 emoji)`,
-          },
-          {
-            role: 'user',
-            content: `El usuario acaba de: ${context}. Genera un mensaje de celebracion.`,
-          },
-        ],
-        temperature: 0.9,
-        max_tokens: 100,
-      });
+            },
+            {
+              role: 'user',
+              content: `El usuario acaba de: ${normalizedContext}. Genera un mensaje de celebracion.`,
+            },
+          ],
+          temperature: 0.9,
+          max_tokens: 100,
+        },
+        OPENAI_TIMEOUT_MS
+      );
 
-      const message = completion.choices[0].message.content.trim();
+      const message = completion?.choices?.[0]?.message?.content?.trim();
+      if (!message) {
+        throw new Error('Respuesta vacia de OpenAI');
+      }
 
       // TODO: Opcionalmente guardar el mensaje en Firestore para historial
 
       return { message };
     } catch (error) {
-      console.error('Error en generateReward:', error);
+      console.error(`[${FUNCTION_NAME}] error`, {
+        fn: FUNCTION_NAME,
+        stage: 'openai',
+        name: error?.name,
+        status: error?.status,
+        message: error?.message,
+        stack: error?.stack,
+      });
 
-      // Fallback: mensaje generico si la IA falla
-      return {
-        message: 'Buen trabajo! Sigue asi, cada paso cuenta.',
-      };
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+
+      if (isOpenAITimeoutOrAbort(error)) {
+        throw new HttpsError('deadline-exceeded', 'La IA tardó demasiado. Intenta de nuevo.', {
+          fn: FUNCTION_NAME,
+          stage: 'openai',
+        });
+      }
+
+      if (error?.status === 429) {
+        throw new HttpsError('resource-exhausted', 'Alta demanda. Intenta en un momento.');
+      }
+
+      if (error?.status === 401 || error?.status === 403) {
+        throw new HttpsError('failed-precondition', 'Configuración de IA inválida.');
+      }
+
+      throw new HttpsError('internal', 'Error interno al generar recompensa', {
+        fn: FUNCTION_NAME,
+        stage: 'unknown',
+      });
     }
   }
 );

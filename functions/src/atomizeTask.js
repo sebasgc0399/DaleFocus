@@ -9,7 +9,8 @@
  * Input (request.data):
  * {
  *   taskTitle: string,     // Titulo de la tarea
- *   barrier: string        // 'overwhelmed' | 'uncertain' | 'bored' | 'perfectionism'
+ *   barrier: string,       // 'overwhelmed' | 'uncertain' | 'bored' | 'perfectionism'
+ *   taskId?: string        // Opcional (backward-compatible)
  * }
  *
  * Output:
@@ -30,6 +31,55 @@ import { db } from './index.js';
 
 // Barreras validas
 const VALID_BARRIERS = ['overwhelmed', 'uncertain', 'bored', 'perfectionism'];
+const FUNCTION_NAME = 'atomizeTask';
+
+function resolveOpenAITimeoutMs() {
+  const parsed = Number.parseInt(process.env.OPENAI_TIMEOUT_MS ?? '', 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 30000;
+}
+
+const OPENAI_TIMEOUT_MS = resolveOpenAITimeoutMs();
+
+function makeOpenAITimeoutError(timeoutMs) {
+  const timeoutError = new Error(`OpenAI timeout after ${timeoutMs}ms`);
+  timeoutError.code = 'OPENAI_TIMEOUT';
+  return timeoutError;
+}
+
+function isOpenAITimeoutOrAbort(error) {
+  return (
+    error?.code === 'OPENAI_TIMEOUT' ||
+    error?.name === 'AbortError' ||
+    error?.name === 'APIConnectionTimeoutError' ||
+    error?.name === 'APIUserAbortError'
+  );
+}
+
+async function createChatCompletionWithTimeout(openai, payload, timeoutMs) {
+  const controller = new AbortController();
+  let timeoutId = null;
+
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      controller.abort();
+      reject(makeOpenAITimeoutError(timeoutMs));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([
+      openai.chat.completions.create(payload, {
+        signal: controller.signal,
+        timeout: timeoutMs,
+      }),
+      timeoutPromise,
+    ]);
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
+}
 
 /**
  * Construye el prompt del sistema para GPT-5.1
@@ -112,19 +162,57 @@ export const atomizeTask = onCall(
     }
 
     const userId = request.auth.uid;
-    const { taskTitle, barrier } = request.data;
+    const { taskTitle, barrier, taskId } = request.data ?? {};
 
-    // Validaciones
-    if (!taskTitle || !barrier) {
-      throw new HttpsError('invalid-argument', 'Faltan campos requeridos: taskTitle, barrier');
+    // Validacion estricta de taskTitle
+    if (typeof taskTitle !== 'string') {
+      throw new HttpsError('invalid-argument', 'taskTitle debe ser un string');
     }
 
-    if (!VALID_BARRIERS.includes(barrier)) {
+    const normalizedTaskTitle = taskTitle.trim();
+    if (!normalizedTaskTitle) {
+      throw new HttpsError('invalid-argument', 'taskTitle no puede estar vacio');
+    }
+
+    if (normalizedTaskTitle.length > 200) {
+      throw new HttpsError('invalid-argument', 'El titulo de la tarea no debe exceder 200 caracteres');
+    }
+
+    if (typeof barrier !== 'string' || !barrier.trim()) {
+      throw new HttpsError('invalid-argument', 'Falta campo requerido: barrier');
+    }
+
+    const normalizedBarrier = barrier.trim();
+    if (!VALID_BARRIERS.includes(normalizedBarrier)) {
       throw new HttpsError('invalid-argument', `Barrera invalida. Debe ser: ${VALID_BARRIERS.join(', ')}`);
     }
 
-    if (taskTitle.length > 200) {
-      throw new HttpsError('invalid-argument', 'El titulo de la tarea no debe exceder 200 caracteres');
+    // Backward-compatible: taskId opcional para detectar tarea completada
+    if (taskId !== undefined && taskId !== null) {
+      if (typeof taskId !== 'string' || !taskId.trim()) {
+        throw new HttpsError('invalid-argument', 'taskId inválido');
+      }
+
+      const normalizedTaskId = taskId.trim();
+      const taskDoc = await db.collection('tasks').doc(normalizedTaskId).get();
+
+      if (!taskDoc.exists) {
+        throw new HttpsError('invalid-argument', 'taskId inválido');
+      }
+
+      const existingTask = taskDoc.data();
+      if (existingTask.userId !== userId) {
+        throw new HttpsError('permission-denied', 'No tienes permisos para acceder a esta tarea');
+      }
+
+      if (existingTask.status === 'completed') {
+        throw new HttpsError('failed-precondition', 'La tarea ya está completada');
+      }
+    }
+
+    const openaiApiKey = process.env.OPENAI_API_KEY?.trim();
+    if (!openaiApiKey) {
+      throw new HttpsError('failed-precondition', 'Servicio de IA no configurado');
     }
 
     // TODO: Implementar rate limiting (max 5 atomizaciones/min por usuario)
@@ -132,21 +220,45 @@ export const atomizeTask = onCall(
     try {
       // Llamar a GPT-5.1
       const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
+        apiKey: openaiApiKey,
       });
 
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-5-2025-08-07',
-        messages: [
-          { role: 'system', content: buildSystemPrompt() },
-          { role: 'user', content: buildUserPrompt(taskTitle, barrier) },
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.7,
-      });
+      const completion = await createChatCompletionWithTimeout(
+        openai,
+        {
+          model: 'gpt-5-2025-08-07',
+          messages: [
+            { role: 'system', content: buildSystemPrompt() },
+            { role: 'user', content: buildUserPrompt(normalizedTaskTitle, normalizedBarrier) },
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.7,
+        },
+        OPENAI_TIMEOUT_MS
+      );
 
       // Parsear respuesta de la IA
-      const plan = JSON.parse(completion.choices[0].message.content);
+      let plan;
+      try {
+        const rawPlan = completion?.choices?.[0]?.message?.content;
+        if (typeof rawPlan !== 'string') {
+          throw new SyntaxError('Respuesta de OpenAI sin JSON valido');
+        }
+
+        plan = JSON.parse(rawPlan);
+      } catch (parseError) {
+        console.error(`[${FUNCTION_NAME}] parse error`, {
+          fn: FUNCTION_NAME,
+          stage: 'parse',
+          message: parseError?.message,
+          stack: parseError?.stack,
+        });
+
+        throw new HttpsError('internal', 'Error interno al procesar la respuesta de IA', {
+          fn: FUNCTION_NAME,
+          stage: 'parse',
+        });
+      }
 
       // Guardar tarea en Firestore
       const taskRef = await db.collection('tasks').add({
@@ -175,14 +287,50 @@ export const atomizeTask = onCall(
       );
       await Promise.all(stepsPromises);
 
-      // Devolver resultado completo
+      // Devolver resultado completo (shape exacto consumido por frontend)
       return {
         taskId: taskRef.id,
         ...plan,
       };
     } catch (error) {
-      console.error('Error en atomizeTask:', error);
-      throw new HttpsError('internal', 'Error interno al atomizar la tarea');
+      console.error(`[${FUNCTION_NAME}] error`, {
+        fn: FUNCTION_NAME,
+        stage: error?.details?.stage ?? 'unknown',
+        name: error?.name,
+        status: error?.status,
+        message: error?.message,
+        stack: error?.stack,
+      });
+
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+
+      if (isOpenAITimeoutOrAbort(error)) {
+        throw new HttpsError('deadline-exceeded', 'La solicitud tardó demasiado en responder', {
+          fn: FUNCTION_NAME,
+          stage: 'openai',
+        });
+      }
+
+      if (error?.status === 429) {
+        throw new HttpsError('resource-exhausted', 'Alta demanda. Intenta en un momento.', {
+          fn: FUNCTION_NAME,
+          stage: 'openai',
+        });
+      }
+
+      if (error?.status === 401 || error?.status === 403) {
+        throw new HttpsError('failed-precondition', 'Servicio de IA no configurado correctamente', {
+          fn: FUNCTION_NAME,
+          stage: 'openai',
+        });
+      }
+
+      throw new HttpsError('internal', 'Error interno al atomizar la tarea', {
+        fn: FUNCTION_NAME,
+        stage: 'unknown',
+      });
     }
   }
 );
