@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Perfil de usuario: solo el propio usuario puede leer/escribir
+    match /users/{userId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+
+    // Tareas: solo el propietario puede leer/escribir
+    match /tasks/{taskId} {
+      allow read, write: if request.auth.uid == resource.data.userId;
+      allow create: if request.auth.uid == request.resource.data.userId;
+    }
+
+    // Pasos: solo el propietario de la tarea padre puede leer/escribir
+    match /steps/{stepId} {
+      allow read, write: if request.auth.uid == get(/databases/$(database)/documents/tasks/$(resource.data.taskId)).data.userId;
+      allow create: if request.auth.uid == get(/databases/$(database)/documents/tasks/$(request.resource.data.taskId)).data.userId;
+    }
+
+    // Sesiones Pomodoro: solo el propietario puede leer/escribir
+    match /sessions/{sessionId} {
+      allow read, write: if request.auth.uid == resource.data.userId;
+      allow create: if request.auth.uid == request.resource.data.userId;
+    }
+
+    // Metricas diarias: solo el propietario puede leer/escribir
+    match /metrics/{userId}/daily/{date} {
+      allow read, write: if request.auth.uid == userId;
+    }
+  }
+}

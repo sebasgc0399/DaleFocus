@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(ls *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(node --version)",
+      "Bash(npm --version)",
+      "Bash(cd frontend && npm run dev)",
+      "Bash(cd frontend && npm run lint)",
+      "Bash(cd frontend && npm run build)",
+      "Bash(cd frontend && npm run preview)",
+      "Bash(cd functions && npm run lint)",
+      "Bash(cd functions && npm run build)",
+      "Bash(cd functions && npm run serve)",
+      "WebFetch(domain:claudefa.st)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(./frontend/.env)",
+      "Read(./frontend/.env.*)",
+      "Read(./functions/.env)",
+      "Read(./functions/.env.*)",
+      "Bash(curl *)",
+      "Bash(wget *)"
+    ],
+    "ask": [
+      "Bash(firebase deploy *)",
+      "Bash(firebase emulators:start *)",
+      "Bash(git push *)",
+      "Bash(rm *)"
+    ]
+  },
+  "model": "opus",
+  "language": "spanish",
+  "effortLevel": "medium"
+}

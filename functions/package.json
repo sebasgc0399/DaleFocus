@@ -1,0 +1,18 @@
+{
+  "name": "dalefocus-functions",
+  "description": "Firebase Cloud Functions para DaleFocus - Atomizacion IA y metricas",
+  "main": "src/index.js",
+  "type": "module",
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "serve": "firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.1",
+    "firebase-functions": "^6.1.1",
+    "openai": "^4.77.3"
+  }
+}
