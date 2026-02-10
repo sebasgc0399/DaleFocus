@@ -24,6 +24,8 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import OpenAI from 'openai';
 import { CALLABLE_RUNTIME } from './runtimeOptions.js';
+import { generateRewardInputSchema } from './schemas.js';
+import { validateOrThrow } from './validation.js';
 
 // Descripciones de tono por personalidad para el prompt
 const PERSONALITY_TONES = {
@@ -50,10 +52,6 @@ const SYSTEM_PROMPT = Object.freeze(
     Object.entries(PERSONALITY_TONES).map(([key, tone]) => [key, SYSTEM_PROMPT_TEMPLATE.replace('__TONE__', tone)])
   )
 );
-
-function invalidArgument(message) {
-  return new HttpsError('invalid-argument', message);
-}
 
 function makeOpenAITimeoutError(timeoutMs) {
   const timeoutError = new Error(`OpenAI timeout after ${timeoutMs}ms`);
@@ -103,32 +101,14 @@ export const generateReward = onCall(
       throw new HttpsError('unauthenticated', 'Debes iniciar sesion');
     }
 
-    const { personality, context } = request.data ?? {};
+    const { personality, context } = validateOrThrow(
+      generateRewardInputSchema,
+      request.data ?? {},
+      'Datos invalidos para recompensa'
+    );
 
-    if (typeof personality !== 'string') {
-      throw invalidArgument('personality inválido');
-    }
-
-    const normalizedPersonality = personality.trim();
-    if (!normalizedPersonality) {
-      throw invalidArgument('personality inválido');
-    }
-
-    if (typeof context !== 'string') {
-      throw invalidArgument('context inválido');
-    }
-
-    const normalizedContext = context.trim();
-    if (!normalizedContext) {
-      throw invalidArgument('context inválido');
-    }
-
-    if (normalizedContext.length > 300) {
-      throw invalidArgument('context inválido (max 300 caracteres)');
-    }
-
-    const personalityKey = PERSONALITY_TONES[normalizedPersonality]
-      ? normalizedPersonality
+    const personalityKey = PERSONALITY_TONES[personality]
+      ? personality
       : 'coach-pro';
     const systemPrompt = SYSTEM_PROMPT[personalityKey];
 
@@ -148,7 +128,7 @@ export const generateReward = onCall(
             },
             {
               role: 'user',
-              content: `El usuario acaba de: ${normalizedContext}. Genera un mensaje de celebracion.`,
+              content: `El usuario acaba de: ${context}. Genera un mensaje de celebracion.`,
             },
           ],
           temperature: 0.9,
@@ -159,13 +139,20 @@ export const generateReward = onCall(
 
       const message = completion?.choices?.[0]?.message?.content?.trim();
       if (!message) {
-        throw new Error('Respuesta vacia de OpenAI');
+        throw new HttpsError('internal', 'Error interno al generar recompensa', {
+          fn: FUNCTION_NAME,
+          stage: 'openai_response',
+        });
       }
 
       // TODO: Opcionalmente guardar el mensaje en Firestore para historial
 
       return { message };
     } catch (error) {
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+
       console.error(`[${FUNCTION_NAME}] error`, {
         fn: FUNCTION_NAME,
         stage: 'openai',
@@ -174,10 +161,6 @@ export const generateReward = onCall(
         message: error?.message,
         stack: error?.stack,
       });
-
-      if (error instanceof HttpsError) {
-        throw error;
-      }
 
       if (isOpenAITimeoutOrAbort(error)) {
         throw new HttpsError('deadline-exceeded', 'La IA tardó demasiado. Intenta de nuevo.', {

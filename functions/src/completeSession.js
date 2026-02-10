@@ -21,29 +21,13 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { db } from './index.js';
 import { CALLABLE_RUNTIME } from './runtimeOptions.js';
+import { completeSessionInputSchema } from './schemas.js';
+import { validateOrThrow } from './validation.js';
 
 const FUNCTION_NAME = 'completeSession';
-const MAX_DURATION_MINUTES = 240;
 
 function invalidArgument(message) {
   return new HttpsError('invalid-argument', message);
-}
-
-function normalizeOptionalId(value, fieldName) {
-  if (value === undefined || value === null) {
-    return null;
-  }
-
-  if (typeof value !== 'string') {
-    throw invalidArgument(`${fieldName} inválido`);
-  }
-
-  const normalized = value.trim();
-  if (!normalized) {
-    throw invalidArgument(`${fieldName} inválido`);
-  }
-
-  return normalized;
 }
 
 export const completeSession = onCall(
@@ -54,23 +38,14 @@ export const completeSession = onCall(
     }
 
     const userId = request.auth.uid;
-    const { taskId, stepId, durationMinutes, completed } = request.data ?? {};
+    const { taskId, stepId, durationMinutes, completed } = validateOrThrow(
+      completeSessionInputSchema,
+      request.data ?? {},
+      'Datos invalidos de sesion'
+    );
 
-    const normalizedTaskId = normalizeOptionalId(taskId, 'taskId');
-    const normalizedStepId = normalizeOptionalId(stepId, 'stepId');
-
-    if (
-      typeof durationMinutes !== 'number' ||
-      !Number.isFinite(durationMinutes) ||
-      durationMinutes <= 0 ||
-      durationMinutes > MAX_DURATION_MINUTES
-    ) {
-      throw invalidArgument('durationMinutes inválido');
-    }
-
-    if (typeof completed !== 'boolean') {
-      throw invalidArgument('completed inválido');
-    }
+    const normalizedTaskId = taskId ?? null;
+    const normalizedStepId = stepId ?? null;
 
     const completedBool = completed === true;
 

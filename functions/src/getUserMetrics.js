@@ -24,6 +24,8 @@
  */
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { CALLABLE_RUNTIME } from './runtimeOptions.js';
+import { getUserMetricsInputSchema } from './schemas.js';
+import { validateOrThrow } from './validation.js';
 
 export const getUserMetrics = onCall(
   CALLABLE_RUNTIME.getUserMetrics,
@@ -32,26 +34,11 @@ export const getUserMetrics = onCall(
       throw new HttpsError('unauthenticated', 'Debes iniciar sesion');
     }
 
-    const rawDays = request.data?.days;
-    let days = 7;
-
-    if (rawDays !== undefined && rawDays !== null) {
-      const parsedDays = Number(rawDays);
-
-      if (
-        !Number.isFinite(parsedDays) ||
-        !Number.isInteger(parsedDays) ||
-        parsedDays < 1 ||
-        parsedDays > 30
-      ) {
-        throw new HttpsError(
-          'invalid-argument',
-          'days inválido. Debe ser un entero entre 1 y 30.'
-        );
-      }
-
-      days = parsedDays;
-    }
+    const { days = 7 } = validateOrThrow(
+      getUserMetricsInputSchema,
+      request.data ?? {},
+      'Parametros invalidos'
+    );
 
     try {
       // TODO: Consultar Firestore para calcular metricas reales
@@ -95,6 +82,7 @@ export const getUserMetrics = onCall(
       console.error('Error en getUserMetrics:', error);
       throw new HttpsError('internal', 'Error interno al calcular métricas', {
         fn: 'getUserMetrics',
+        stage: 'unknown',
       });
     }
   }

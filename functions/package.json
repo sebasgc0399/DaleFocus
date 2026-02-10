@@ -4,15 +4,16 @@
   "main": "src/index.js",
   "type": "module",
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "scripts": {
     "serve": "firebase emulators:start --only functions",
     "deploy": "firebase deploy --only functions"
   },
   "dependencies": {
-    "firebase-admin": "^13.0.1",
-    "firebase-functions": "^6.1.1",
-    "openai": "^4.77.3"
+    "firebase-admin": "^13.6.1",
+    "firebase-functions": "^7.0.5",
+    "openai": "^4.77.3",
+    "zod": "^3.25.76"
   }
 }

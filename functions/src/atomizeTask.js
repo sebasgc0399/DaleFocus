@@ -29,12 +29,14 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import OpenAI from 'openai';
 import { db } from './index.js';
 import { CALLABLE_RUNTIME } from './runtimeOptions.js';
+import { atomizePlanSchema, atomizeTaskInputSchema } from './schemas.js';
+import { validateAIOrThrow, validateOrThrow } from './validation.js';
 
-// Barreras validas
-const VALID_BARRIERS = ['overwhelmed', 'uncertain', 'bored', 'perfectionism'];
 const FUNCTION_NAME = 'atomizeTask';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY?.trim() ?? '';
 const OPENAI_CLIENT = OPENAI_API_KEY ? new OpenAI({ apiKey: OPENAI_API_KEY }) : null;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 5;
 const SYSTEM_PROMPT = `Eres un asistente experto en combatir la procrastinacion mediante atomizacion inteligente de tareas.
 
 REGLAS DE ATOMIZACION segun barrera:
@@ -134,6 +136,70 @@ async function createChatCompletionWithTimeout(openai, payload, timeoutMs) {
   }
 }
 
+async function enforceAtomizeRateLimit(userId) {
+  const limitRef = db.collection('rate_limits').doc(userId);
+  const nowMs = Date.now();
+  const nowDate = new Date(nowMs);
+
+  await db.runTransaction(async (transaction) => {
+    const limitDoc = await transaction.get(limitRef);
+
+    if (!limitDoc.exists) {
+      transaction.set(limitRef, {
+        windowStart: nowDate,
+        count: 1,
+      });
+      return;
+    }
+
+    const data = limitDoc.data() ?? {};
+    const currentCount = Number.isFinite(data.count) ? Math.trunc(data.count) : 0;
+
+    let windowStartMs = 0;
+    if (data.windowStart && typeof data.windowStart.toMillis === 'function') {
+      windowStartMs = data.windowStart.toMillis();
+    } else if (data.windowStart instanceof Date) {
+      windowStartMs = data.windowStart.getTime();
+    }
+
+    if (!windowStartMs || nowMs - windowStartMs >= RATE_LIMIT_WINDOW_MS) {
+      transaction.set(
+        limitRef,
+        {
+          windowStart: nowDate,
+          count: 1,
+        },
+        { merge: true }
+      );
+      return;
+    }
+
+    if (currentCount >= RATE_LIMIT_MAX_REQUESTS) {
+      throw new HttpsError(
+        'resource-exhausted',
+        'Has alcanzado el límite de atomizaciones. Intenta en un minuto.'
+      );
+    }
+
+    transaction.set(
+      limitRef,
+      {
+        windowStart: data.windowStart,
+        count: currentCount + 1,
+      },
+      { merge: true }
+    );
+  });
+}
+
+/*
+Manual tests sugeridos:
+1) Mismo uid hace 5 llamadas en <60s: deben pasar.
+2) 6ta llamada en <60s: debe fallar con resource-exhausted.
+3) Esperar >=60s y volver a llamar: debe pasar (ventana reseteada).
+4) Disparar llamadas concurrentes (>5) con el mismo uid: maximo 5 deben pasar.
+*/
+
 /**
  * Construye el prompt del usuario con los datos de la tarea
  */
@@ -158,39 +224,15 @@ export const atomizeTask = onCall(
     }
 
     const userId = request.auth.uid;
-    const { taskTitle, barrier, taskId } = request.data ?? {};
-
-    // Validacion estricta de taskTitle
-    if (typeof taskTitle !== 'string') {
-      throw new HttpsError('invalid-argument', 'taskTitle debe ser un string');
-    }
-
-    const normalizedTaskTitle = taskTitle.trim();
-    if (!normalizedTaskTitle) {
-      throw new HttpsError('invalid-argument', 'taskTitle no puede estar vacio');
-    }
-
-    if (normalizedTaskTitle.length > 200) {
-      throw new HttpsError('invalid-argument', 'El titulo de la tarea no debe exceder 200 caracteres');
-    }
-
-    if (typeof barrier !== 'string' || !barrier.trim()) {
-      throw new HttpsError('invalid-argument', 'Falta campo requerido: barrier');
-    }
-
-    const normalizedBarrier = barrier.trim();
-    if (!VALID_BARRIERS.includes(normalizedBarrier)) {
-      throw new HttpsError('invalid-argument', `Barrera invalida. Debe ser: ${VALID_BARRIERS.join(', ')}`);
-    }
+    const { taskTitle, barrier, taskId } = validateOrThrow(
+      atomizeTaskInputSchema,
+      request.data ?? {},
+      'Datos invalidos para atomizar'
+    );
 
     // Backward-compatible: taskId opcional para detectar tarea completada
-    if (taskId !== undefined && taskId !== null) {
-      if (typeof taskId !== 'string' || !taskId.trim()) {
-        throw new HttpsError('invalid-argument', 'taskId inválido');
-      }
-
-      const normalizedTaskId = taskId.trim();
-      const taskDoc = await db.collection('tasks').doc(normalizedTaskId).get();
+    if (taskId) {
+      const taskDoc = await db.collection('tasks').doc(taskId).get();
 
       if (!taskDoc.exists) {
         throw new HttpsError('invalid-argument', 'taskId inválido');
@@ -210,16 +252,16 @@ export const atomizeTask = onCall(
       throw new HttpsError('failed-precondition', 'Servicio de IA no configurado');
     }
 
-    // TODO: Implementar rate limiting (max 5 atomizaciones/min por usuario)
-
     try {
+      await enforceAtomizeRateLimit(userId);
+
       const completion = await createChatCompletionWithTimeout(
         OPENAI_CLIENT,
         {
           model: 'gpt-5-2025-08-07',
           messages: [
             { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user', content: buildUserPrompt(normalizedTaskTitle, normalizedBarrier) },
+            { role: 'user', content: buildUserPrompt(taskTitle, barrier) },
           ],
           response_format: { type: 'json_object' },
           temperature: 0.7,
@@ -249,21 +291,22 @@ export const atomizeTask = onCall(
           stage: 'parse',
         });
       }
+      const planValidated = validateAIOrThrow(atomizePlanSchema, plan);
 
       // Guardar tarea en Firestore
       const taskRef = await db.collection('tasks').add({
         userId,
-        title: plan.taskTitle,
-        barrier: plan.barrier,
-        strategy: plan.strategy,
-        estimatedPomodoros: plan.estimatedPomodoros,
+        title: planValidated.taskTitle,
+        barrier: planValidated.barrier,
+        strategy: planValidated.strategy,
+        estimatedPomodoros: planValidated.estimatedPomodoros,
         status: 'active',
         createdAt: new Date(),
         completedAt: null,
       });
 
       // Guardar pasos en Firestore
-      const stepsPromises = plan.steps.map((step) =>
+      const stepsPromises = planValidated.steps.map((step) =>
         db.collection('steps').add({
           taskId: taskRef.id,
           title: step.title,
@@ -280,9 +323,13 @@ export const atomizeTask = onCall(
       // Devolver resultado completo (shape exacto consumido por frontend)
       return {
         taskId: taskRef.id,
-        ...plan,
+        ...planValidated,
       };
     } catch (error) {
+      if (error instanceof HttpsError) {
+        throw error;
+      }
+
       console.error(`[${FUNCTION_NAME}] error`, {
         fn: FUNCTION_NAME,
         stage: error?.details?.stage ?? 'unknown',
@@ -291,10 +338,6 @@ export const atomizeTask = onCall(
         message: error?.message,
         stack: error?.stack,
       });
-
-      if (error instanceof HttpsError) {
-        throw error;
-      }
 
       if (isOpenAITimeoutOrAbort(error)) {
         throw new HttpsError('deadline-exceeded', 'La solicitud tardó demasiado en responder', {
