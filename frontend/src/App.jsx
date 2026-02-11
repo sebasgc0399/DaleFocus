@@ -9,7 +9,7 @@
  * Usa Context API para determinar el estado actual del usuario
  * y que pantalla mostrar.
  */
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import { useApp } from './contexts/AppContext';
 import BarrierCheckIn from './components/BarrierCheckIn';
@@ -21,11 +21,12 @@ import RewardPopup from './components/RewardPopup';
 import Login from './components/Login';
 
 function App() {
-  const { user, loading: authLoading, logout } = useAuth();
+  const { user, userProfile, loading: authLoading, logout } = useAuth();
   const { currentScreen, rewardMessage, setCurrentScreen, resetApp } = useApp();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
 
-  const userLabel = user?.displayName || user?.email || 'Usuario';
+  const userLabel = user?.displayName || userProfile?.displayName || user?.email || 'Usuario';
 
   const handleNavigateDashboard = () => {
     setCurrentScreen('dashboard');
@@ -46,6 +47,30 @@ function App() {
       console.error('Error al cerrar sesion:', error);
     }
   };
+
+  useEffect(() => {
+    if (!isUserMenuOpen) return undefined;
+
+    const handleMouseDown = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isUserMenuOpen]);
 
   // Pantalla de carga mientras se verifica autenticacion
   if (authLoading) {
@@ -111,7 +136,7 @@ function App() {
               </button>
             )}
 
-            <div className="relative">
+            <div ref={userMenuRef} className="relative">
               <button
                 type="button"
                 onClick={() => setIsUserMenuOpen((prev) => !prev)}

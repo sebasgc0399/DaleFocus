@@ -9,14 +9,15 @@
  *
  * Uso: envolver la app con <AuthProvider> y consumir con useAuth()
  */
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
+  updateProfile,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { DEFAULT_POMODORO_CONFIG, PERSONALITIES } from '../utils/constants';
 
@@ -41,30 +42,48 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const didInitRef = useRef(false);
 
   // Escuchar cambios en el estado de autenticacion
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    let unsubscribeProfile = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       setUser(firebaseUser);
 
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+        unsubscribeProfile = null;
+      }
+
       if (firebaseUser) {
-        // TODO: Cargar perfil del usuario desde Firestore
-        try {
-          const profileDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-          if (profileDoc.exists()) {
-            setUserProfile(profileDoc.data());
-          }
-        } catch (err) {
-          console.error('Error cargando perfil:', err);
-        }
+        const profileRef = doc(db, 'users', firebaseUser.uid);
+        unsubscribeProfile = onSnapshot(
+          profileRef,
+          (profileDoc) => {
+            setUserProfile(profileDoc.exists() ? profileDoc.data() : null);
+          },
+          (err) => {
+            console.error('Error sincronizando perfil:', err);
+            setUserProfile(null);
+          },
+        );
       } else {
         setUserProfile(null);
       }
 
-      setLoading(false);
+      if (!didInitRef.current) {
+        setLoading(false);
+        didInitRef.current = true;
+      }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+      }
+    };
   }, []);
 
   /**
@@ -73,17 +92,24 @@ export function AuthProvider({ children }) {
    */
   const register = async (email, password, displayName) => {
     const credential = await createUserWithEmailAndPassword(auth, email, password);
+    const resolvedDisplayName = displayName?.trim() || email.split('@')[0] || 'Usuario';
 
     // Crear documento de perfil en Firestore
     const profileData = {
-      displayName: displayName || 'Usuario',
+      displayName: resolvedDisplayName,
       personality: PERSONALITIES[0].id, // 'Coach Pro' por defecto
       pomodoroConfig: DEFAULT_POMODORO_CONFIG,
-      createdAt: new Date(),
+      createdAt: serverTimestamp(),
     };
 
     await setDoc(doc(db, 'users', credential.user.uid), profileData);
-    setUserProfile(profileData);
+
+    try {
+      await updateProfile(credential.user, { displayName: resolvedDisplayName });
+    } catch (err) {
+      // El perfil en Firestore sigue siendo la fuente de verdad.
+      console.error('No se pudo actualizar displayName en Auth:', err);
+    }
 
     return credential.user;
   };
