@@ -17,6 +17,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { DEFAULT_POMODORO_CONFIG } from '../utils/constants';
 import { completeSession } from '../services/api';
+import { Button } from './ui/Button';
+import { Badge } from './ui/Badge';
 
 function PomodoroTimer() {
   const { activeStep, currentTask, setCurrentScreen, setRewardMessage } = useApp();
@@ -152,14 +154,9 @@ function PomodoroTimer() {
 
       {/* Estado: trabajo o descanso */}
       <div className="mb-4">
-        <span className={`text-sm font-medium px-3 py-1 rounded-full
-          ${isBreak
-            ? 'bg-green-100 text-green-700'
-            : 'bg-red-100 text-red-700'
-          }`}
-        >
+        <Badge variant={isBreak ? 'break' : 'focus'}>
           {isBreak ? 'Descanso' : 'Enfoque'}
-        </span>
+        </Badge>
       </div>
 
       {/* Temporizador */}
@@ -172,17 +169,17 @@ function PomodoroTimer() {
       {/* Controles */}
       <div className="flex justify-center gap-4 mb-8">
         {!isRunning ? (
-          <button onClick={handleStart} className="btn-primary">
+          <Button onClick={handleStart}>
             {timeLeft === config.workMinutes * 60 && !isBreak ? 'Iniciar' : 'Reanudar'}
-          </button>
+          </Button>
         ) : (
-          <button onClick={handlePause} className="btn-secondary">
+          <Button variant="secondary" onClick={handlePause}>
             Pausar
-          </button>
+          </Button>
         )}
-        <button onClick={handleCancel} className="btn-secondary">
+        <Button variant="secondary" onClick={handleCancel}>
           Cancelar
-        </button>
+        </Button>
       </div>
 
       {/* Contador de pomodoros */}

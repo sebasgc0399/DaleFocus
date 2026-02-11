@@ -35,3 +35,21 @@ La comunicacion con Cloud Functions usa `httpsCallable` del Firebase SDK (no req
 ## Notas
 - La app requiere usuario autenticado para operar flujo principal.
 - `AuthContext` tiene `login/register/logout`, pero la UI final de login/register sigue pendiente en `src/App.jsx`.
+
+## Estilo y contribucion
+
+Este proyecto usa un **Design System v0** documentado en [`DESIGN_SYSTEM.md`](./DESIGN_SYSTEM.md).
+
+### Definition of Done (UI)
+
+Antes de considerar completada cualquier pantalla o feature nueva, verificar:
+
+- [ ] **No clases prohibidas:** 0 usos de `red-*`, `green-*`, `blue-*`, `amber-*`. Solo tokens semanticos (`primary`, `success`, `warning`, `danger`, `gray`).
+- [ ] **Usa UI primitives:** Botones con `<Button>`, inputs con `<Input>`, contenedores con `<Card>`, indicadores con `<Badge>`. No replicar estilos a mano.
+- [ ] **Tokens semanticos para estados:** errores con `danger-*` o `.alert-error`, exito con `success-*`, alertas con `warning-*`.
+
+Verificacion rapida:
+```bash
+# Debe dar 0 resultados en src/
+grep -rn "red-\|green-\|blue-\|amber-" src/
+```

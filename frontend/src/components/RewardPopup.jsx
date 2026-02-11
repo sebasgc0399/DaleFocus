@@ -14,6 +14,8 @@
  */
 import { useState, useEffect } from 'react';
 import { useApp } from '../contexts/AppContext';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
 
 function RewardPopup({ message }) {
   const { setRewardMessage } = useApp();
@@ -53,8 +55,9 @@ function RewardPopup({ message }) {
       />
 
       {/* Card de recompensa */}
-      <div
-        className={`relative bg-white rounded-2xl shadow-xl p-8 max-w-sm w-full
+      <Card
+        padding="lg"
+        className={`relative max-w-sm w-full rounded-2xl shadow-xl
                     text-center transform transition-all duration-300
                     ${isVisible ? 'scale-100 opacity-100' : 'scale-90 opacity-0'}`}
       >
@@ -67,10 +70,10 @@ function RewardPopup({ message }) {
         </p>
 
         {/* Boton cerrar */}
-        <button onClick={handleClose} className="btn-primary">
+        <Button onClick={handleClose}>
           Seguir!
-        </button>
-      </div>
+        </Button>
+      </Card>
     </div>
   );
 }
