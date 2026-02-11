@@ -9,6 +9,7 @@
  * Usa Context API para determinar el estado actual del usuario
  * y que pantalla mostrar.
  */
+import { useState } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import { useApp } from './contexts/AppContext';
 import BarrierCheckIn from './components/BarrierCheckIn';
@@ -17,10 +18,34 @@ import StepList from './components/StepList';
 import PomodoroTimer from './components/PomodoroTimer';
 import Dashboard from './components/Dashboard';
 import RewardPopup from './components/RewardPopup';
+import Login from './components/Login';
 
 function App() {
-  const { user, loading: authLoading } = useAuth();
-  const { currentScreen, rewardMessage } = useApp();
+  const { user, loading: authLoading, logout } = useAuth();
+  const { currentScreen, rewardMessage, setCurrentScreen, resetApp } = useApp();
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  const userLabel = user?.displayName || user?.email || 'Usuario';
+
+  const handleNavigateDashboard = () => {
+    setCurrentScreen('dashboard');
+    setIsUserMenuOpen(false);
+  };
+
+  const handleNavigateNewTask = () => {
+    setCurrentScreen('checkin');
+    setIsUserMenuOpen(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      resetApp();
+      setIsUserMenuOpen(false);
+    } catch (error) {
+      console.error('Error al cerrar sesion:', error);
+    }
+  };
 
   // Pantalla de carga mientras se verifica autenticacion
   if (authLoading) {
@@ -31,14 +56,13 @@ function App() {
     );
   }
 
-  // TODO: Implementar pantalla de Login/Register
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-primary-600 mb-4">DaleFocus</h1>
           <p className="text-gray-600 mb-8">Atomiza tus tareas con IA</p>
-          {/* TODO: Componente de Login/Register con Firebase Auth */}
+          <Login />
         </div>
       </div>
     );
@@ -68,7 +92,50 @@ function App() {
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <h1 className="text-xl font-bold text-primary-600">DaleFocus</h1>
-          {/* TODO: Navegacion y boton de perfil/logout */}
+          <div className="flex items-center gap-3">
+            {currentScreen !== 'dashboard' ? (
+              <button
+                type="button"
+                onClick={handleNavigateDashboard}
+                className="px-3 py-2 text-sm font-medium text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
+              >
+                Dashboard
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleNavigateNewTask}
+                className="px-3 py-2 text-sm font-medium text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
+              >
+                Nueva tarea
+              </button>
+            )}
+
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsUserMenuOpen((prev) => !prev)}
+                className="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors max-w-40 truncate"
+              >
+                {userLabel}
+              </button>
+
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                  <div className="px-3 py-2 text-xs text-gray-500 border-b border-gray-100 truncate">
+                    {userLabel}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    Cerrar sesión
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </header>
 
