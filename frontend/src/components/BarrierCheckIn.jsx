@@ -18,6 +18,8 @@
 import { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { BARRIERS } from '../utils/constants';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
 
 function BarrierCheckIn() {
   const [selectedBarrier, setSelectedBarrier] = useState(null);
@@ -51,31 +53,37 @@ function BarrierCheckIn() {
 
       {/* Grid de barreras */}
       <div className="grid grid-cols-2 gap-4 mb-8">
-        {BARRIERS.map((barrier) => (
-          <button
-            key={barrier.id}
-            onClick={() => handleSelect(barrier.id)}
-            className={`card text-center p-6 cursor-pointer transition-all duration-200
-              ${selectedBarrier === barrier.id
-                ? 'ring-2 ring-primary-500 border-primary-500 scale-105'
-                : 'hover:shadow-md hover:scale-102'
+        {BARRIERS.map((barrier) => {
+          const isSelected = selectedBarrier === barrier.id;
+          return (
+            <Card
+              key={barrier.id}
+              selected={isSelected}
+              className={`text-center cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                isSelected ? 'scale-105' : 'hover:shadow-md hover:scale-[1.02]'
               }`}
-          >
-            <span className="text-4xl mb-3 block">{barrier.emoji}</span>
-            <span className="font-semibold text-gray-800 block">{barrier.label}</span>
-            <span className="text-sm text-gray-500 mt-1 block">{barrier.description}</span>
-          </button>
-        ))}
+              onClick={() => handleSelect(barrier.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleSelect(barrier.id);
+                }
+              }}
+            >
+              <span className="text-4xl mb-3 block">{barrier.emoji}</span>
+              <span className="font-semibold text-gray-800 block">{barrier.label}</span>
+              <span className="text-sm text-gray-500 mt-1 block">{barrier.description}</span>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Boton continuar */}
-      <button
-        onClick={handleContinue}
-        disabled={!selectedBarrier}
-        className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-      >
+      <Button fullWidth onClick={handleContinue} disabled={!selectedBarrier}>
         Continuar
-      </button>
+      </Button>
     </div>
   );
 }

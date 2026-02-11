@@ -14,6 +14,9 @@
 import { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { atomizeTask } from '../services/api';
+import { Button } from './ui/Button';
+import { Input } from './ui/Input';
+import { Card } from './ui/Card';
 
 function TaskInput() {
   const [taskTitle, setTaskTitle] = useState('');
@@ -61,48 +64,41 @@ function TaskInput() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="card">
-        {/* Input de tarea */}
-        <div className="mb-6">
-          <label
-            htmlFor="taskTitle"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            Titulo de la tarea
-          </label>
-          <input
+      <Card>
+        <form onSubmit={handleSubmit}>
+          {/* Input de tarea */}
+          <Input
             id="taskTitle"
             type="text"
+            label="Titulo de la tarea"
             value={taskTitle}
             onChange={(e) => setTaskTitle(e.target.value)}
             placeholder="Ej: Preparar presentacion de ventas"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg
-                       focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                       outline-none transition-colors"
             disabled={isLoading}
             maxLength={200}
+            className="mb-6"
           />
-        </div>
 
-        {/* Indicador de barrera seleccionada */}
-        <p className="text-sm text-gray-500 mb-4">
-          Barrera seleccionada: <span className="font-semibold">{barrier}</span>
-        </p>
+          {/* Indicador de barrera seleccionada */}
+          <p className="text-sm text-gray-500 mb-4">
+            Barrera seleccionada: <span className="font-semibold">{barrier}</span>
+          </p>
 
-        {/* Mensaje de error */}
-        {error && (
-          <p className="text-red-500 text-sm mb-4">{error}</p>
-        )}
+          {/* Mensaje de error */}
+          {error && (
+            <div className="alert-error mb-4 text-sm">{error}</div>
+          )}
 
-        {/* Boton de envio */}
-        <button
-          type="submit"
-          disabled={!taskTitle.trim() || isLoading}
-          className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading ? 'Generando plan...' : 'Atomizar tarea'}
-        </button>
-      </form>
+          {/* Boton de envio */}
+          <Button
+            type="submit"
+            fullWidth
+            disabled={!taskTitle.trim() || isLoading}
+          >
+            {isLoading ? 'Generando plan...' : 'Atomizar tarea'}
+          </Button>
+        </form>
+      </Card>
     </div>
   );
 }

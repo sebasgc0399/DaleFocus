@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { parseAuthError } from '../utils/authErrors';
+import { Button } from './ui/Button';
+import { Input } from './ui/Input';
+import { Card } from './ui/Card';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -94,86 +97,67 @@ function Login({ onSuccess }) {
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="card text-left">
-        {/* Error */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 mb-4 text-sm">
-            {error}
-          </div>
-        )}
+      <Card>
+        <form onSubmit={handleSubmit} className="text-left">
+          {/* Error */}
+          {error && (
+            <div className="alert-error mb-4 text-sm">
+              {error}
+            </div>
+          )}
 
-        {/* Email */}
-        <div className="mb-4">
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-            Email
-          </label>
-          <input
+          {/* Email */}
+          <Input
             id="email"
             type="email"
+            label="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="tu@email.com"
             autoComplete="email"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg
-                       focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                       outline-none transition-colors"
             disabled={isLoading}
+            className="mb-4"
           />
-        </div>
 
-        {/* Password */}
-        <div className="mb-4">
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-            Contraseña
-          </label>
-          <input
+          {/* Password */}
+          <Input
             id="password"
             type="password"
+            label="Contraseña"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Mínimo 6 caracteres"
             autoComplete={isLogin ? 'current-password' : 'new-password'}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg
-                       focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                       outline-none transition-colors"
             disabled={isLoading}
+            className="mb-4"
           />
-        </div>
 
-        {/* Confirm Password (solo registro) */}
-        {!isLogin && (
-          <div className="mb-4">
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-              Confirmar Contraseña
-            </label>
-            <input
+          {/* Confirm Password (solo registro) */}
+          {!isLogin && (
+            <Input
               id="confirmPassword"
               type="password"
+              label="Confirmar Contraseña"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Repite tu contraseña"
               autoComplete="new-password"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg
-                         focus:ring-2 focus:ring-primary-500 focus:border-primary-500
-                         outline-none transition-colors"
               disabled={isLoading}
+              className="mb-4"
             />
-          </div>
-        )}
+          )}
 
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={isLoading || !email.trim() || password.length < 6 || (!isLogin && password !== confirmPassword)}
-          className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading
-            ? 'Cargando...'
-            : isLogin
-              ? 'Iniciar Sesión'
-              : 'Registrarse'}
-        </button>
-      </form>
+          {/* Submit */}
+          <Button
+            type="submit"
+            fullWidth
+            loading={isLoading}
+            disabled={!email.trim() || password.length < 6 || (!isLogin && password !== confirmPassword)}
+          >
+            {isLogin ? 'Iniciar Sesión' : 'Registrarse'}
+          </Button>
+        </form>
+      </Card>
     </div>
   );
 }

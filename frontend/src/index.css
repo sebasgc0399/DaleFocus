@@ -11,24 +11,115 @@
   }
 }
 
-/* Componentes reutilizables con Tailwind */
+/* ==============================
+   Design System v0 — Components
+   ============================== */
 @layer components {
-  /* Boton primario */
+
+  /* === BUTTONS === */
+  .btn-base {
+    @apply inline-flex items-center justify-center rounded-lg font-semibold
+           transition-colors duration-200
+           focus:outline-none focus:ring-2 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
   .btn-primary {
-    @apply bg-primary-600 text-white px-6 py-3 rounded-lg font-semibold
-           hover:bg-primary-700 transition-colors duration-200
-           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+    @apply btn-base bg-primary-600 text-white px-6 py-3
+           hover:bg-primary-700 focus:ring-primary-500;
   }
 
-  /* Boton secundario */
   .btn-secondary {
-    @apply bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold
-           hover:bg-gray-300 transition-colors duration-200
-           focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2;
+    @apply btn-base bg-gray-200 text-gray-700 px-6 py-3
+           hover:bg-gray-300 focus:ring-gray-400;
   }
 
-  /* Card contenedora */
+  .btn-ghost {
+    @apply btn-base bg-transparent text-primary-700 px-6 py-3
+           hover:bg-primary-50 focus:ring-primary-500;
+  }
+
+  .btn-danger {
+    @apply btn-base bg-danger-600 text-white px-6 py-3
+           hover:bg-danger-700 focus:ring-danger-500;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+
+  .btn-lg {
+    @apply px-8 py-4 text-base;
+  }
+
+  /* === INPUTS === */
+  .input-base {
+    @apply w-full px-4 py-3 border border-gray-300 rounded-lg
+           bg-white text-gray-900 outline-none transition-colors
+           focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+           disabled:opacity-50 disabled:bg-gray-50 disabled:cursor-not-allowed;
+  }
+
+  .input-error {
+    @apply border-danger-500 focus:ring-danger-500 focus:border-danger-500;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-gray-700 mb-2;
+  }
+
+  /* === CARDS === */
   .card {
     @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6;
+  }
+
+  .card-sm {
+    @apply p-4;
+  }
+
+  .card-lg {
+    @apply p-8;
+  }
+
+  .card-selected {
+    @apply ring-2 ring-primary-500 border-primary-500;
+  }
+
+  .card-muted {
+    @apply opacity-60;
+  }
+
+  .card-interactive {
+    @apply hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer;
+  }
+
+  /* === BADGES === */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .badge-focus {
+    @apply bg-danger-100 text-danger-700;
+  }
+
+  .badge-break {
+    @apply bg-success-100 text-success-700;
+  }
+
+  .badge-info {
+    @apply bg-primary-100 text-primary-700;
+  }
+
+  .badge-warning {
+    @apply bg-warning-100 text-warning-700;
+  }
+
+  .badge-neutral {
+    @apply bg-gray-100 text-gray-700;
+  }
+
+  /* === ALERTS === */
+  .alert-error {
+    @apply bg-danger-50 border border-danger-200 text-danger-700 rounded-lg p-3;
   }
 }

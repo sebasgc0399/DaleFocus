@@ -19,6 +19,7 @@ import PomodoroTimer from './components/PomodoroTimer';
 import Dashboard from './components/Dashboard';
 import RewardPopup from './components/RewardPopup';
 import Login from './components/Login';
+import { Button } from './components/ui/Button';
 
 function App() {
   const { user, userProfile, loading: authLoading, logout } = useAuth();
@@ -119,21 +120,13 @@ function App() {
           <h1 className="text-xl font-bold text-primary-600">DaleFocus</h1>
           <div className="flex items-center gap-3">
             {currentScreen !== 'dashboard' ? (
-              <button
-                type="button"
-                onClick={handleNavigateDashboard}
-                className="px-3 py-2 text-sm font-medium text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
-              >
+              <Button variant="ghost" size="sm" onClick={handleNavigateDashboard}>
                 Dashboard
-              </button>
+              </Button>
             ) : (
-              <button
-                type="button"
-                onClick={handleNavigateNewTask}
-                className="px-3 py-2 text-sm font-medium text-primary-700 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
-              >
+              <Button variant="ghost" size="sm" onClick={handleNavigateNewTask}>
                 Nueva tarea
-              </button>
+              </Button>
             )}
 
             <div ref={userMenuRef} className="relative">

@@ -13,6 +13,8 @@
  */
 import { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
+import { Button } from './ui/Button';
+import { Card } from './ui/Card';
 
 function StepList() {
   const { currentTask, setCurrentScreen, setActiveStep } = useApp();
@@ -87,11 +89,12 @@ function StepList() {
           const isNext = step.id === currentTask?.nextBestActionId && !isCompleted;
 
           return (
-            <div
+            <Card
               key={step.id}
-              className={`card flex items-start gap-4
-                ${isNext ? 'ring-2 ring-primary-400 border-primary-400' : ''}
-                ${isCompleted ? 'opacity-60' : ''}`}
+              padding="sm"
+              selected={isNext}
+              muted={isCompleted}
+              className="flex items-start gap-4"
             >
               {/* Checkbox */}
               <button
@@ -134,18 +137,20 @@ function StepList() {
                   </button>
                 )}
               </div>
-            </div>
+            </Card>
           );
         })}
       </div>
 
       {/* Boton ver dashboard */}
-      <button
+      <Button
+        variant="secondary"
+        fullWidth
+        className="mt-6"
         onClick={() => setCurrentScreen('dashboard')}
-        className="btn-secondary w-full mt-6"
       >
         Ver Dashboard
-      </button>
+      </Button>
     </div>
   );
 }
