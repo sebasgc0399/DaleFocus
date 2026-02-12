@@ -5,7 +5,7 @@
 @tailwind utilities;
 
 /* ==============================
-   Design System v1 — Calm Premium Tokens
+   Design System v1 - Calm Premium Tokens
    ============================== */
 :root {
   --df-surface-0: 255 255 255;
@@ -23,7 +23,7 @@
 }
 
 /* ==============================
-   Design System v0 — Components
+   Design System v0 - Components
    ============================== */
 @layer components {
 
@@ -136,7 +136,7 @@
     @apply bg-danger-50 border border-danger-200 text-danger-700 rounded-lg p-3;
   }
 
-  /* === DS v1 — Calm Premium === */
+  /* === DS v1 - Calm Premium === */
   .bg-app {
     background:
       radial-gradient(ellipse 80% 60% at 20% 10%, var(--df-bg-tint-1), transparent 70%),
@@ -148,9 +148,47 @@
     @apply outline-2 outline-primary-500 outline-offset-2;
     box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
   }
+
+  .screen-enter {
+    animation: screen-enter 250ms ease-out both;
+  }
+
+  @keyframes screen-enter {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .bottom-nav {
+    @apply fixed bottom-0 inset-x-0 bg-surface-0 border-t border-subtle shadow-elevation-2 z-30;
+  }
+
+  .bottom-nav-tab {
+    @apply flex flex-col items-center justify-center gap-1 min-h-14 px-3 py-2 text-xs font-medium transition-colors duration-200 ease-out;
+  }
+
+  .bottom-nav-tab--active {
+    @apply text-primary-600;
+  }
+
+  .bottom-nav-tab--inactive {
+    @apply text-gray-400 hover:text-gray-600;
+  }
 }
 
-/* === DS v1 — Reduced Motion === */
+@layer utilities {
+  .pb-bottom-nav {
+    padding-bottom: 4.5rem;
+  }
+}
+
+/* === DS v1 - Reduced Motion === */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

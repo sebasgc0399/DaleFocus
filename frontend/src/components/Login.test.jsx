@@ -47,7 +47,7 @@ describe('Login', () => {
     expect(screen.getByLabelText('Contraseña')).toBeInTheDocument();
     expect(screen.queryByLabelText('Confirmar Contraseña')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Registrarse' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Registrarse' }));
 
     expect(screen.getByLabelText('Confirmar Contraseña')).toBeInTheDocument();
   });
@@ -74,7 +74,7 @@ describe('Login', () => {
 
   it('muestra "Las contraseñas no coinciden" en registro', () => {
     render(<Login />);
-    fireEvent.click(screen.getByRole('button', { name: 'Registrarse' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Registrarse' }));
 
     fillLoginFields({ email: 'user@test.com', password: '123456' });
     fireEvent.change(screen.getByLabelText('Confirmar Contraseña'), { target: { value: '654321' } });
@@ -100,7 +100,7 @@ describe('Login', () => {
   it('muestra error parseado cuando register rechaza con auth/invalid-credential', async () => {
     authMocks.register.mockRejectedValueOnce({ code: 'auth/invalid-credential' });
     render(<Login />);
-    fireEvent.click(screen.getByRole('button', { name: 'Registrarse' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Registrarse' }));
 
     fillLoginFields({ email: 'newuser@test.com', password: '123456' });
     fireEvent.change(screen.getByLabelText('Confirmar Contraseña'), { target: { value: '123456' } });
@@ -141,3 +141,4 @@ describe('Login', () => {
     });
   });
 });
+

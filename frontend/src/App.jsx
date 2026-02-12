@@ -10,21 +10,32 @@
  * y que pantalla mostrar.
  */
 import { useEffect, useRef, useState } from 'react';
-import { useAuth } from './contexts/AuthContext';
-import { useApp } from './contexts/AppContext';
 import BarrierCheckIn from './components/BarrierCheckIn';
-import TaskInput from './components/TaskInput';
-import StepList from './components/StepList';
-import PomodoroTimer from './components/PomodoroTimer';
 import Dashboard from './components/Dashboard';
-import Settings from './components/Settings';
-import RewardPopup from './components/RewardPopup';
 import Login from './components/Login';
+import PomodoroTimer from './components/PomodoroTimer';
+import RewardPopup from './components/RewardPopup';
+import Settings from './components/Settings';
+import StepList from './components/StepList';
+import TaskInput from './components/TaskInput';
+import { BottomNav } from './components/ui/BottomNav.jsx';
 import { Button } from './components/ui/Button';
+import { ScreenTransition } from './components/ui/ScreenTransition.jsx';
+import { useApp } from './contexts/AppContext';
+import { useAuth } from './contexts/AuthContext';
 
 function App() {
   const { user, userProfile, loading: authLoading, logout } = useAuth();
-  const { currentScreen, rewardMessage, setCurrentScreen, resetApp, goBack, canGoBack } = useApp();
+  const {
+    currentScreen,
+    currentTask,
+    activeStep,
+    rewardMessage,
+    setCurrentScreen,
+    resetApp,
+    goBack,
+    canGoBack,
+  } = useApp();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
 
@@ -44,6 +55,31 @@ function App() {
     setCurrentScreen('settings');
     setIsUserMenuOpen(false);
   };
+
+  const handleNavigateFocus = () => {
+    if (activeStep) {
+      setCurrentScreen('pomodoro');
+    } else if (currentTask?.steps?.length) {
+      setCurrentScreen('steps');
+    } else if (currentTask) {
+      setCurrentScreen('task-input');
+    } else {
+      setCurrentScreen('checkin');
+    }
+
+    setIsUserMenuOpen(false);
+  };
+
+  const handleBottomTabChange = (tabId) => {
+    if (tabId === 'dashboard') {
+      handleNavigateDashboard();
+      return;
+    }
+
+    handleNavigateFocus();
+  };
+
+  const activeBottomTab = currentScreen === 'dashboard' ? 'dashboard' : 'focus';
 
   const handleLogout = async () => {
     try {
@@ -151,13 +187,15 @@ function App() {
             )}
             <h1 className="text-xl font-bold text-primary-600">DaleFocus</h1>
           </div>
+
           <div className="flex items-center gap-3">
-            {currentScreen !== 'dashboard' ? (
-              <Button variant="ghost" size="sm" onClick={handleNavigateDashboard}>
-                Dashboard
-              </Button>
-            ) : (
-              <Button variant="ghost" size="sm" onClick={handleNavigateNewTask}>
+            {currentScreen === 'dashboard' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleNavigateNewTask}
+                className="hidden md:inline-flex"
+              >
                 Nueva tarea
               </Button>
             )}
@@ -186,7 +224,7 @@ function App() {
                     onClick={handleLogout}
                     className="w-full text-left px-3 py-2 text-sm text-danger-600 hover:bg-danger-50 transition-colors duration-200 rounded-b-lg"
                   >
-                    Cerrar sesión
+                    Cerrar sesion
                   </button>
                 </div>
               )}
@@ -196,9 +234,17 @@ function App() {
       </header>
 
       {/* Contenido principal */}
-      <main className="max-w-4xl mx-auto px-4 py-6">
-        {renderScreen()}
+      <main className={`max-w-4xl mx-auto px-4 py-6 ${currentScreen !== 'pomodoro' ? 'pb-bottom-nav md:pb-6' : ''}`}>
+        <ScreenTransition screenKey={currentScreen}>
+          {renderScreen()}
+        </ScreenTransition>
       </main>
+
+      <BottomNav
+        activeTab={activeBottomTab}
+        onTabChange={handleBottomTabChange}
+        hidden={currentScreen === 'pomodoro'}
+      />
 
       {/* Popup de recompensa (se muestra sobre cualquier pantalla) */}
       {rewardMessage && <RewardPopup message={rewardMessage} />}
