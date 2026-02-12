@@ -98,6 +98,13 @@ cd ..
 firebase deploy --only hosting,functions,firestore:rules,firestore:indexes
 ```
 
+## Gobernanza y Definition of Done
+
+- Cualquier pantalla nueva debe usar UI primitives (`Button`, `Input`, `Card`, `Badge`) del Design System v0.
+- Prohibido `red-*` / `green-*` / `blue-*` / `amber-*` en código nuevo. Usar tokens semánticos.
+- Cambios de alto impacto (schema, auth, rules, DS tokens, contexts) requieren mini-RFC + aprobación del Owner antes de código.
+- Flujo obligatorio: Brief → Plan → Approval Gate → Build → Audit → Close. Ver `AGENTS.md` y `WORKFLOW.md`.
+
 ## Roadmap Corto (Post-Reto)
 - Cerrar login/register UI en frontend (AuthContext ya implementado).
 - Implementar calculo real de metricas en `getUserMetrics`.

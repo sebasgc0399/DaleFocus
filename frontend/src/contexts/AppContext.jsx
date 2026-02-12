@@ -26,7 +26,7 @@ export function useApp() {
 }
 
 // Estado inicial de la aplicacion
-const initialState = {
+export const initialState = {
   currentScreen: 'checkin',  // Pantalla activa
   barrier: null,              // Barrera emocional seleccionada
   currentTask: null,          // Tarea actual con pasos de la IA
@@ -35,7 +35,7 @@ const initialState = {
 };
 
 // Tipos de accion del reducer
-const ActionTypes = {
+export const ActionTypes = {
   SET_SCREEN: 'SET_SCREEN',
   SET_BARRIER: 'SET_BARRIER',
   SET_CURRENT_TASK: 'SET_CURRENT_TASK',
@@ -47,7 +47,7 @@ const ActionTypes = {
 /**
  * Reducer principal de la aplicacion
  */
-function appReducer(state, action) {
+export function appReducer(state, action) {
   switch (action.type) {
     case ActionTypes.SET_SCREEN:
       return { ...state, currentScreen: action.payload };

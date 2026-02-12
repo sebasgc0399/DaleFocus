@@ -20,7 +20,8 @@
       "Bash(cd functions && npm run build)",
       "Bash(cd functions && npm run serve)",
       "WebFetch(domain:claudefa.st)",
-      "Bash(npx vite build:*)"
+      "Bash(npx vite build:*)",
+      "Bash(cd:*)"
     ],
     "deny": [
       "Read(./.env)",
