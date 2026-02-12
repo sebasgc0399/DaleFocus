@@ -1,0 +1,14 @@
+﻿{
+  "workingOn": "Working on:",
+  "status": {
+    "break": "Break",
+    "focus": "Focus"
+  },
+  "controls": {
+    "start": "Start",
+    "resume": "Resume",
+    "pause": "Pause",
+    "cancel": "Cancel"
+  },
+  "completedCount": "Completed pomodoros: {{count}}"
+}

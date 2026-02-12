@@ -1,6 +1,8 @@
+﻿import { useTranslation } from 'react-i18next';
+
 const BOTTOM_TABS = [
-  { id: 'focus', label: 'Focus' },
-  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'focus' },
+  { id: 'dashboard' },
 ];
 
 function FocusIcon() {
@@ -48,22 +50,29 @@ function DashboardIcon() {
 }
 
 function BottomNav({ activeTab, onTabChange, hidden = false }) {
+  const { t } = useTranslation('navigation');
+
   if (hidden) return null;
 
-  const activeIndex = BOTTOM_TABS.findIndex((tab) => tab.id === activeTab);
+  const tabs = BOTTOM_TABS.map((tab) => ({
+    ...tab,
+    label: t(`tabs.${tab.id}`),
+  }));
+
+  const activeIndex = tabs.findIndex((tab) => tab.id === activeTab);
 
   const handleArrowNavigation = (event, tabId) => {
-    const currentIdx = BOTTOM_TABS.findIndex((tab) => tab.id === tabId);
+    const currentIdx = tabs.findIndex((tab) => tab.id === tabId);
     let nextIdx = -1;
 
     if (event.key === 'ArrowRight') {
-      nextIdx = (currentIdx + 1) % BOTTOM_TABS.length;
+      nextIdx = (currentIdx + 1) % tabs.length;
     } else if (event.key === 'ArrowLeft') {
-      nextIdx = (currentIdx - 1 + BOTTOM_TABS.length) % BOTTOM_TABS.length;
+      nextIdx = (currentIdx - 1 + tabs.length) % tabs.length;
     } else if (event.key === 'Home') {
       nextIdx = 0;
     } else if (event.key === 'End') {
-      nextIdx = BOTTOM_TABS.length - 1;
+      nextIdx = tabs.length - 1;
     } else if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       onTabChange(tabId);
@@ -72,14 +81,14 @@ function BottomNav({ activeTab, onTabChange, hidden = false }) {
 
     if (nextIdx >= 0) {
       event.preventDefault();
-      onTabChange(BOTTOM_TABS[nextIdx].id);
+      onTabChange(tabs[nextIdx].id);
     }
   };
 
   return (
-    <nav className="bottom-nav md:hidden" aria-label="Navegacion principal movil">
-      <div role="tablist" className="max-w-4xl mx-auto grid grid-cols-2 px-3 py-1" aria-label="Navegacion">
-        {BOTTOM_TABS.map((tab) => {
+    <nav className="bottom-nav md:hidden" aria-label={t('mobileNavLabel')}>
+      <div role="tablist" className="max-w-4xl mx-auto grid grid-cols-2 px-3 py-1" aria-label={t('mobileNavTablist')}>
+        {tabs.map((tab) => {
           const isActive = tab.id === activeTab;
           const tabClasses = [
             'bottom-nav-tab rounded-lg focus-visible:outline-2 focus-visible:outline-primary-500 focus-visible:outline-offset-2',
@@ -106,7 +115,9 @@ function BottomNav({ activeTab, onTabChange, hidden = false }) {
           );
         })}
       </div>
-      <div className="sr-only">Tab activo: {activeIndex >= 0 ? BOTTOM_TABS[activeIndex].label : 'Focus'}</div>
+      <div className="sr-only">
+        {t('activeTab', { tab: activeIndex >= 0 ? tabs[activeIndex].label : tabs[0].label })}
+      </div>
     </nav>
   );
 }

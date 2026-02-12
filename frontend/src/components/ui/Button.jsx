@@ -1,3 +1,5 @@
+﻿import { useTranslation } from 'react-i18next';
+
 const VARIANT_CLASS = {
   primary: 'btn-primary',
   secondary: 'btn-secondary',
@@ -17,11 +19,14 @@ function Button({
   fullWidth = false,
   loading = false,
   disabled = false,
+  loadingText,
   type = 'button',
   className,
   children,
   ...rest
 }) {
+  const { t } = useTranslation('common');
+
   const classes = [
     VARIANT_CLASS[variant],
     SIZE_CLASS[size],
@@ -31,6 +36,8 @@ function Button({
     .filter(Boolean)
     .join(' ');
 
+  const resolvedLoadingText = loadingText ?? t('status.loading');
+
   return (
     <button
       type={type}
@@ -38,7 +45,7 @@ function Button({
       className={classes}
       {...rest}
     >
-      {loading ? 'Cargando...' : children}
+      {loading ? resolvedLoadingText : children}
     </button>
   );
 }

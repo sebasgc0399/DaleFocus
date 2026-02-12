@@ -1,0 +1,40 @@
+﻿{
+  "brand": {
+    "name": "DaleFocus",
+    "tagline": "Atomiza tus tareas con IA"
+  },
+  "status": {
+    "loading": "Cargando...",
+    "comingSoon": "Proximamente."
+  },
+  "actions": {
+    "continue": "Continuar",
+    "cancel": "Cancelar",
+    "newTask": "Nueva tarea",
+    "viewDashboard": "Ver Dashboard",
+    "start": "Iniciar",
+    "resume": "Reanudar",
+    "pause": "Pausar",
+    "settings": "Configuraciones",
+    "logout": "Cerrar sesion",
+    "follow": "Seguir"
+  },
+  "language": {
+    "selectorLabel": "Selector de idioma",
+    "settingsHint": "Cambia el idioma de la interfaz",
+    "options": {
+      "es": "Espanol",
+      "en": "Ingles"
+    },
+    "short": {
+      "es": "ES",
+      "en": "EN"
+    }
+  },
+  "user": {
+    "defaultName": "Usuario"
+  },
+  "meta": {
+    "fallbackProbe": "Solo disponible en espanol"
+  }
+}

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * main.jsx - Punto de entrada de la aplicacion DaleFocus
  *
  * Renderiza el componente raiz App dentro de los providers
@@ -9,6 +9,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
 import { AppProvider } from './contexts/AppContext';
+import './i18n';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(

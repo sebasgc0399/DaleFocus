@@ -1,21 +1,21 @@
-import { describe, expect, it } from 'vitest';
+﻿import { describe, expect, it } from 'vitest';
 import { parseAuthError } from './authErrors';
 
 describe('parseAuthError', () => {
   it.each([
-    ['auth/invalid-email', 'Email inválido'],
-    ['auth/invalid-credential', 'Email o contraseña incorrectos'],
-    ['auth/weak-password', 'La contraseña debe tener al menos 6 caracteres'],
-    ['auth/email-already-in-use', 'Este email ya está registrado'],
-  ])('devuelve mensaje correcto para %s', (errorCode, expectedMessage) => {
-    expect(parseAuthError(errorCode)).toBe(expectedMessage);
+    ['auth/invalid-email', 'auth:errors.invalidEmail'],
+    ['auth/invalid-credential', 'auth:errors.invalidCredential'],
+    ['auth/weak-password', 'auth:errors.weakPassword'],
+    ['auth/email-already-in-use', 'auth:errors.emailAlreadyInUse'],
+  ])('devuelve key correcta para %s', (errorCode, expectedKey) => {
+    expect(parseAuthError(errorCode)).toBe(expectedKey);
   });
 
   it.each([
     [undefined],
     [null],
     ['auth/codigo-desconocido'],
-  ])('usa fallback para códigos inválidos: %s', (errorCode) => {
-    expect(parseAuthError(errorCode)).toBe('Error al autenticar');
+  ])('usa fallback para codigos invalidos: %s', (errorCode) => {
+    expect(parseAuthError(errorCode)).toBe('auth:errors.unknown');
   });
 });

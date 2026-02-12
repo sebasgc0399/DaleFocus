@@ -1,5 +1,6 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+﻿import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import i18n from '../i18n';
 import Login from './Login';
 
 const authMocks = vi.hoisted(() => ({
@@ -14,13 +15,15 @@ vi.mock('../contexts/AuthContext', () => ({
   }),
 }));
 
+const t = (key, options) => i18n.t(key, options);
+
 function getForm() {
-  return screen.getByLabelText('Email').closest('form');
+  return screen.getByLabelText(t('auth:fields.emailLabel')).closest('form');
 }
 
 function fillLoginFields({ email, password }) {
-  fireEvent.change(screen.getByLabelText('Email'), { target: { value: email } });
-  fireEvent.change(screen.getByLabelText('Contraseña'), { target: { value: password } });
+  fireEvent.change(screen.getByLabelText(t('auth:fields.emailLabel')), { target: { value: email } });
+  fireEvent.change(screen.getByLabelText(t('auth:fields.passwordLabel')), { target: { value: password } });
 }
 
 function createDeferred() {
@@ -40,47 +43,47 @@ describe('Login', () => {
     authMocks.register.mockResolvedValue({ uid: 'user-1' });
   });
 
-  it('renderiza tabs y campos según modo login/register', () => {
+  it('renderiza tabs y campos segun modo login/register', () => {
     render(<Login />);
 
-    expect(screen.getByLabelText('Email')).toBeInTheDocument();
-    expect(screen.getByLabelText('Contraseña')).toBeInTheDocument();
-    expect(screen.queryByLabelText('Confirmar Contraseña')).not.toBeInTheDocument();
+    expect(screen.getByLabelText(t('auth:fields.emailLabel'))).toBeInTheDocument();
+    expect(screen.getByLabelText(t('auth:fields.passwordLabel'))).toBeInTheDocument();
+    expect(screen.queryByLabelText(t('auth:fields.confirmPasswordLabel'))).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Registrarse' }));
+    fireEvent.click(screen.getByRole('tab', { name: t('auth:tabs.register') }));
 
-    expect(screen.getByLabelText('Confirmar Contraseña')).toBeInTheDocument();
+    expect(screen.getByLabelText(t('auth:fields.confirmPasswordLabel'))).toBeInTheDocument();
   });
 
-  it('muestra "Email inválido" cuando el email no es válido', () => {
+  it('muestra error cuando el email no es valido', () => {
     render(<Login />);
 
     fillLoginFields({ email: 'email-invalido', password: '123456' });
     fireEvent.submit(getForm());
 
-    expect(screen.getByText('Email inválido')).toBeInTheDocument();
+    expect(screen.getByText(t('auth:validation.invalidEmail'))).toBeInTheDocument();
     expect(authMocks.login).not.toHaveBeenCalled();
   });
 
-  it('muestra mensaje cuando la contraseña tiene menos de 6 caracteres', () => {
+  it('muestra mensaje cuando la contrasena tiene menos de 6 caracteres', () => {
     render(<Login />);
 
     fillLoginFields({ email: 'user@test.com', password: '123' });
     fireEvent.submit(getForm());
 
-    expect(screen.getByText('La contraseña debe tener al menos 6 caracteres')).toBeInTheDocument();
+    expect(screen.getByText(t('auth:validation.weakPassword'))).toBeInTheDocument();
     expect(authMocks.login).not.toHaveBeenCalled();
   });
 
-  it('muestra "Las contraseñas no coinciden" en registro', () => {
+  it('muestra password mismatch en registro', () => {
     render(<Login />);
-    fireEvent.click(screen.getByRole('tab', { name: 'Registrarse' }));
+    fireEvent.click(screen.getByRole('tab', { name: t('auth:tabs.register') }));
 
     fillLoginFields({ email: 'user@test.com', password: '123456' });
-    fireEvent.change(screen.getByLabelText('Confirmar Contraseña'), { target: { value: '654321' } });
+    fireEvent.change(screen.getByLabelText(t('auth:fields.confirmPasswordLabel')), { target: { value: '654321' } });
     fireEvent.submit(getForm());
 
-    expect(screen.getByText('Las contraseñas no coinciden')).toBeInTheDocument();
+    expect(screen.getByText(t('auth:validation.passwordMismatch'))).toBeInTheDocument();
     expect(authMocks.register).not.toHaveBeenCalled();
   });
 
@@ -94,25 +97,25 @@ describe('Login', () => {
     await waitFor(() => {
       expect(authMocks.login).toHaveBeenCalledWith('user@test.com', '123456');
     });
-    expect(await screen.findByText('Email o contraseña incorrectos')).toBeInTheDocument();
+    expect(await screen.findByText(t('auth:errors.invalidCredential'))).toBeInTheDocument();
   });
 
   it('muestra error parseado cuando register rechaza con auth/invalid-credential', async () => {
     authMocks.register.mockRejectedValueOnce({ code: 'auth/invalid-credential' });
     render(<Login />);
-    fireEvent.click(screen.getByRole('tab', { name: 'Registrarse' }));
+    fireEvent.click(screen.getByRole('tab', { name: t('auth:tabs.register') }));
 
     fillLoginFields({ email: 'newuser@test.com', password: '123456' });
-    fireEvent.change(screen.getByLabelText('Confirmar Contraseña'), { target: { value: '123456' } });
+    fireEvent.change(screen.getByLabelText(t('auth:fields.confirmPasswordLabel')), { target: { value: '123456' } });
     fireEvent.submit(getForm());
 
     await waitFor(() => {
       expect(authMocks.register).toHaveBeenCalledWith('newuser@test.com', '123456', 'newuser');
     });
-    expect(await screen.findByText('Email o contraseña incorrectos')).toBeInTheDocument();
+    expect(await screen.findByText(t('auth:errors.invalidCredential'))).toBeInTheDocument();
   });
 
-  it('deshabilita inputs y tabs mientras isLoading está activo', async () => {
+  it('deshabilita inputs y tabs mientras isLoading esta activo', async () => {
     const deferred = createDeferred();
     authMocks.login.mockReturnValueOnce(deferred.promise);
     render(<Login />);
@@ -121,24 +124,20 @@ describe('Login', () => {
     fireEvent.submit(getForm());
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Email')).toBeDisabled();
+      expect(screen.getByLabelText(t('auth:fields.emailLabel'))).toBeDisabled();
     });
 
-    expect(screen.getByLabelText('Contraseña')).toBeDisabled();
+    expect(screen.getByLabelText(t('auth:fields.passwordLabel'))).toBeDisabled();
 
-    const tabButtons = screen
-      .getAllByRole('button')
-      .filter((button) => button.getAttribute('type') === 'button');
-
-    tabButtons.forEach((button) => {
-      expect(button).toBeDisabled();
+    const tabButtons = screen.getAllByRole('tab');
+    tabButtons.forEach((tab) => {
+      expect(tab).toBeDisabled();
     });
 
     deferred.resolve({ uid: 'user-1' });
 
     await waitFor(() => {
-      expect(screen.getByLabelText('Email')).not.toBeDisabled();
+      expect(screen.getByLabelText(t('auth:fields.emailLabel'))).not.toBeDisabled();
     });
   });
 });
-

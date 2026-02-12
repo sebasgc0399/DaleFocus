@@ -1,19 +1,16 @@
-import { useState } from 'react';
+﻿import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import { parseAuthError } from '../utils/authErrors';
 import { Button } from './ui/Button';
-import { Input } from './ui/Input';
 import { Card } from './ui/Card';
+import { Input } from './ui/Input';
 import { SegmentedTabs } from './ui/SegmentedTabs';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const LOGIN_TABS = [
-  { id: 'login', label: 'Iniciar Sesión' },
-  { id: 'register', label: 'Registrarse' },
-];
-
 function Login({ onSuccess }) {
+  const { t } = useTranslation(['auth', 'common']);
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,6 +19,14 @@ function Login({ onSuccess }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const { login, register } = useAuth();
+
+  const loginTabs = useMemo(
+    () => [
+      { id: 'login', label: t('auth:tabs.login') },
+      { id: 'register', label: t('auth:tabs.register') },
+    ],
+    [t],
+  );
 
   const switchTab = (loginMode) => {
     setIsLogin(loginMode);
@@ -34,22 +39,25 @@ function Login({ onSuccess }) {
     const emailTrim = email.trim();
 
     if (!EMAIL_REGEX.test(emailTrim)) {
-      setError('Email inválido');
+      setError('auth:validation.invalidEmail');
       return false;
     }
+
     if (password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres');
+      setError('auth:validation.weakPassword');
       return false;
     }
+
     if (!isLogin && password !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
+      setError('auth:validation.passwordMismatch');
       return false;
     }
+
     return true;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setError(null);
 
     if (!validate()) return;
@@ -71,79 +79,72 @@ function Login({ onSuccess }) {
     }
   };
 
-
   return (
     <div className="max-w-md mx-auto">
-      {/* Tabs */}
       <div className="mb-6">
         <SegmentedTabs
-          tabs={LOGIN_TABS}
+          tabs={loginTabs}
           activeTab={isLogin ? 'login' : 'register'}
           onChange={(tabId) => switchTab(tabId === 'login')}
           disabled={isLoading}
-          ariaLabel="Modo de autenticación"
+          ariaLabel={t('auth:aria.mode')}
         />
       </div>
 
-      {/* Form */}
       <Card>
         <form onSubmit={handleSubmit} className="text-left">
-          {/* Error */}
           {error && (
             <div className="alert-error mb-4 text-sm">
-              {error}
+              {t(error)}
             </div>
           )}
 
-          {/* Email */}
           <Input
             id="email"
             type="email"
-            label="Email"
+            label={t('auth:fields.emailLabel')}
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="tu@email.com"
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder={t('auth:fields.emailPlaceholder')}
             autoComplete="email"
             disabled={isLoading}
             className="mb-4"
           />
 
-          {/* Password */}
           <Input
             id="password"
             type="password"
-            label="Contraseña"
+            label={t('auth:fields.passwordLabel')}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Mínimo 6 caracteres"
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder={t('auth:fields.passwordPlaceholder')}
             autoComplete={isLogin ? 'current-password' : 'new-password'}
             disabled={isLoading}
             className="mb-4"
           />
 
-          {/* Confirm Password (solo registro) */}
           {!isLogin && (
             <Input
               id="confirmPassword"
               type="password"
-              label="Confirmar Contraseña"
+              label={t('auth:fields.confirmPasswordLabel')}
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Repite tu contraseña"
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              placeholder={t('auth:fields.confirmPasswordPlaceholder')}
               autoComplete="new-password"
               disabled={isLoading}
               className="mb-4"
             />
           )}
 
-          {/* Submit */}
           <Button
             type="submit"
             fullWidth
             loading={isLoading}
+            loadingText={t('common:status.loading')}
             disabled={!email.trim() || password.length < 6 || (!isLogin && password !== confirmPassword)}
           >
-            {isLogin ? 'Iniciar Sesión' : 'Registrarse'}
+            {isLogin ? t('auth:submit.login') : t('auth:submit.register')}
           </Button>
         </form>
       </Card>

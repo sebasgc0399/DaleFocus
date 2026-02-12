@@ -1,0 +1,10 @@
+﻿{
+  "back": "Back",
+  "mobileNavLabel": "Main mobile navigation",
+  "mobileNavTablist": "Navigation",
+  "activeTab": "Active tab: {{tab}}",
+  "tabs": {
+    "focus": "Focus",
+    "dashboard": "Dashboard"
+  }
+}

@@ -1,0 +1,51 @@
+﻿{
+  "checkIn": {
+    "title": "How do you feel right now?",
+    "subtitle": "Choose the barrier that best describes how you feel about your task"
+  },
+  "barriers": {
+    "overwhelmed": {
+      "label": "Overwhelmed",
+      "description": "It feels like too much"
+    },
+    "uncertain": {
+      "label": "Uncertain",
+      "description": "I do not know where to start"
+    },
+    "bored": {
+      "label": "Bored",
+      "description": "I am not in the mood"
+    },
+    "perfectionism": {
+      "label": "Perfectionism",
+      "description": "I want it to be perfect"
+    }
+  },
+  "strategies": {
+    "micro_wins": "Micro wins",
+    "structured_exploration": "Structured exploration",
+    "quick_momentum": "Quick momentum",
+    "good_enough_iterations": "Good-enough iterations"
+  },
+  "input": {
+    "title": "What is your task?",
+    "subtitle": "Describe what you need to do and AI will create a step-by-step plan",
+    "taskLabel": "Task title",
+    "taskPlaceholder": "Ex: Prepare sales presentation",
+    "selectedBarrier": "Selected barrier: {{barrier}}"
+  },
+  "submit": {
+    "atomize": "Atomize task",
+    "generating": "Generating plan..."
+  },
+  "errors": {
+    "atomizeFailed": "There was an error generating your plan. Please try again."
+  },
+  "stepList": {
+    "defaultTaskTitle": "Your task",
+    "strategyLine": "Strategy: {{strategy}} | Estimated pomodoros: {{count}}",
+    "progress": "{{completed}} of {{total}} steps",
+    "startPomodoro": "Start Pomodoro",
+    "minutes": "{{count}} min"
+  }
+}

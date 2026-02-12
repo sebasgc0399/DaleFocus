@@ -1,15 +1,8 @@
 /**
  * App.jsx - Componente raiz de DaleFocus
- *
- * Maneja la navegacion condicional entre pantallas:
- * - Login/Register (si no esta autenticado)
- * - BarrierCheckIn -> TaskInput -> StepList -> PomodoroTimer (flujo principal)
- * - Dashboard (metricas)
- *
- * Usa Context API para determinar el estado actual del usuario
- * y que pantalla mostrar.
  */
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import BarrierCheckIn from './components/BarrierCheckIn';
 import Dashboard from './components/Dashboard';
 import Login from './components/Login';
@@ -25,6 +18,7 @@ import { useApp } from './contexts/AppContext';
 import { useAuth } from './contexts/AuthContext';
 
 function App() {
+  const { t } = useTranslation(['common', 'navigation']);
   const { user, userProfile, loading: authLoading, logout } = useAuth();
   const {
     currentScreen,
@@ -39,7 +33,7 @@ function App() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
 
-  const userLabel = user?.displayName || userProfile?.displayName || user?.email || 'Usuario';
+  const userLabel = user?.displayName || userProfile?.displayName || user?.email || t('user.defaultName');
 
   const handleNavigateDashboard = () => {
     setCurrentScreen('dashboard');
@@ -115,28 +109,28 @@ function App() {
     };
   }, [isUserMenuOpen]);
 
-  // Pantalla de carga mientras se verifica autenticacion
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-app">
-        <p className="text-lg text-gray-500">Cargando...</p>
+        <p className="text-lg text-gray-500">{t('status.loading')}</p>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-app">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-primary-600 mb-4">DaleFocus</h1>
-          <p className="text-gray-600 mb-8">Atomiza tus tareas con IA</p>
-          <Login />
+      <div className="flex items-center justify-center min-h-screen bg-app px-4">
+        <div className="w-full max-w-md">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-primary-600 mb-4">{t('brand.name')}</h1>
+            <p className="text-gray-600 mb-8">{t('brand.tagline')}</p>
+            <Login />
+          </div>
         </div>
       </div>
     );
   }
 
-  // Renderizado condicional segun la pantalla activa
   const renderScreen = () => {
     switch (currentScreen) {
       case 'checkin':
@@ -158,7 +152,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-app">
-      {/* Header */}
       <header className="bg-surface-0 shadow-sm border-b border-subtle">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -166,7 +159,7 @@ function App() {
               <button
                 type="button"
                 onClick={goBack}
-                aria-label="Regresar"
+                aria-label={t('navigation:back')}
                 className="p-2 rounded-lg text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors duration-200"
               >
                 <svg
@@ -185,7 +178,7 @@ function App() {
                 </svg>
               </button>
             )}
-            <h1 className="text-xl font-bold text-primary-600">DaleFocus</h1>
+            <h1 className="text-xl font-bold text-primary-600">{t('brand.name')}</h1>
           </div>
 
           <div className="flex items-center gap-3">
@@ -196,7 +189,7 @@ function App() {
                 onClick={handleNavigateNewTask}
                 className="hidden md:inline-flex"
               >
-                Nueva tarea
+                {t('actions.newTask')}
               </Button>
             )}
 
@@ -216,7 +209,7 @@ function App() {
                     onClick={handleNavigateSettings}
                     className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200 rounded-t-lg"
                   >
-                    Configuraciones
+                    {t('actions.settings')}
                   </button>
                   <div className="border-t border-subtle" />
                   <button
@@ -224,7 +217,7 @@ function App() {
                     onClick={handleLogout}
                     className="w-full text-left px-3 py-2 text-sm text-danger-600 hover:bg-danger-50 transition-colors duration-200 rounded-b-lg"
                   >
-                    Cerrar sesion
+                    {t('actions.logout')}
                   </button>
                 </div>
               )}
@@ -233,7 +226,6 @@ function App() {
         </div>
       </header>
 
-      {/* Contenido principal */}
       <main className={`max-w-4xl mx-auto px-4 py-6 ${currentScreen !== 'pomodoro' ? 'pb-bottom-nav md:pb-6' : ''}`}>
         <ScreenTransition screenKey={currentScreen}>
           {renderScreen()}
@@ -246,7 +238,6 @@ function App() {
         hidden={currentScreen === 'pomodoro'}
       />
 
-      {/* Popup de recompensa (se muestra sobre cualquier pantalla) */}
       {rewardMessage && <RewardPopup message={rewardMessage} />}
     </div>
   );

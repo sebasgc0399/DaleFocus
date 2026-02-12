@@ -1,0 +1,14 @@
+﻿{
+  "workingOn": "Trabajando en:",
+  "status": {
+    "break": "Descanso",
+    "focus": "Enfoque"
+  },
+  "controls": {
+    "start": "Iniciar",
+    "resume": "Reanudar",
+    "pause": "Pausar",
+    "cancel": "Cancelar"
+  },
+  "completedCount": "Pomodoros completados: {{count}}"
+}

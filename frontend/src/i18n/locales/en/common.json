@@ -1,0 +1,37 @@
+﻿{
+  "brand": {
+    "name": "DaleFocus",
+    "tagline": "Break down your tasks with AI"
+  },
+  "status": {
+    "loading": "Loading...",
+    "comingSoon": "Coming soon."
+  },
+  "actions": {
+    "continue": "Continue",
+    "cancel": "Cancel",
+    "newTask": "New task",
+    "viewDashboard": "View Dashboard",
+    "start": "Start",
+    "resume": "Resume",
+    "pause": "Pause",
+    "settings": "Settings",
+    "logout": "Sign out",
+    "follow": "Keep going"
+  },
+  "language": {
+    "selectorLabel": "Language selector",
+    "settingsHint": "Change the interface language",
+    "options": {
+      "es": "Spanish",
+      "en": "English"
+    },
+    "short": {
+      "es": "ES",
+      "en": "EN"
+    }
+  },
+  "user": {
+    "defaultName": "User"
+  }
+}

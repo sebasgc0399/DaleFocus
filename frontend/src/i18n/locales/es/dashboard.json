@@ -1,0 +1,17 @@
+﻿{
+  "loading": "Cargando metricas...",
+  "title": "Tu Dashboard",
+  "metrics": {
+    "focusIndex": "Focus Index",
+    "timeToAction": "Time-to-Action",
+    "momentum": "Momentum",
+    "timeMinutes": "{{value}}m"
+  },
+  "barriersThisWeek": "Barreras esta semana",
+  "barriers": {
+    "overwhelmed": "Abrumado",
+    "uncertain": "Incertidumbre",
+    "bored": "Pereza",
+    "perfectionism": "Perfeccionismo"
+  }
+}
