@@ -32,11 +32,14 @@ export const initialState = {
   currentTask: null,          // Tarea actual con pasos de la IA
   activeStep: null,           // Paso activo para el Pomodoro
   rewardMessage: null,        // Mensaje motivacional a mostrar
+  navigationHistory: [],      // Stack de pantallas anteriores para back navigation
 };
 
 // Tipos de accion del reducer
 export const ActionTypes = {
   SET_SCREEN: 'SET_SCREEN',
+  GO_BACK: 'GO_BACK',
+  REPLACE_SCREEN: 'REPLACE_SCREEN',
   SET_BARRIER: 'SET_BARRIER',
   SET_CURRENT_TASK: 'SET_CURRENT_TASK',
   SET_ACTIVE_STEP: 'SET_ACTIVE_STEP',
@@ -49,7 +52,19 @@ export const ActionTypes = {
  */
 export function appReducer(state, action) {
   switch (action.type) {
-    case ActionTypes.SET_SCREEN:
+    case ActionTypes.SET_SCREEN: {
+      const newHistory = [...state.navigationHistory, state.currentScreen];
+      if (newHistory.length > 10) newHistory.shift();
+      return { ...state, currentScreen: action.payload, navigationHistory: newHistory };
+    }
+
+    case ActionTypes.GO_BACK: {
+      if (state.navigationHistory.length === 0) return state;
+      const newHistory = state.navigationHistory.slice(0, -1);
+      return { ...state, currentScreen: state.navigationHistory.at(-1), navigationHistory: newHistory };
+    }
+
+    case ActionTypes.REPLACE_SCREEN:
       return { ...state, currentScreen: action.payload };
 
     case ActionTypes.SET_BARRIER:
@@ -94,12 +109,21 @@ export function AppProvider({ children }) {
   const setRewardMessage = (message) =>
     dispatch({ type: ActionTypes.SET_REWARD_MESSAGE, payload: message });
 
+  const goBack = () =>
+    dispatch({ type: ActionTypes.GO_BACK });
+
+  const replaceScreen = (screen) =>
+    dispatch({ type: ActionTypes.REPLACE_SCREEN, payload: screen });
+
   const resetApp = () =>
     dispatch({ type: ActionTypes.RESET });
 
   const value = {
     ...state,
     setCurrentScreen,
+    goBack,
+    replaceScreen,
+    canGoBack: state.navigationHistory.length > 0,
     setBarrier,
     setCurrentTask,
     setActiveStep,

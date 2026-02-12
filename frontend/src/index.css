@@ -4,6 +4,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==============================
+   Design System v1 — Calm Premium Tokens
+   ============================== */
+:root {
+  --df-surface-0: 255 255 255;
+  --df-surface-1: 248 250 252;
+  --df-border-subtle: 226 232 240;
+  --df-bg-tint-1: rgba(14, 165, 233, 0.04);
+  --df-bg-tint-2: rgba(99, 102, 241, 0.03);
+}
+
 /* Estilos base personalizados */
 @layer base {
   body {
@@ -19,29 +30,30 @@
   /* === BUTTONS === */
   .btn-base {
     @apply inline-flex items-center justify-center rounded-lg font-semibold
-           transition-colors duration-200
-           focus:outline-none focus:ring-2 focus:ring-offset-2
+           transition-colors duration-200 ease-out
+           focus:outline-2 focus:outline-primary-500 focus:outline-offset-2
+           focus:shadow-[0_0_0_4px_rgba(14,165,233,0.15)]
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-primary {
     @apply btn-base bg-primary-600 text-white px-6 py-3
-           hover:bg-primary-700 focus:ring-primary-500;
+           hover:bg-primary-700;
   }
 
   .btn-secondary {
-    @apply btn-base bg-gray-200 text-gray-700 px-6 py-3
-           hover:bg-gray-300 focus:ring-gray-400;
+    @apply btn-base bg-surface-0 text-gray-700 border border-subtle px-6 py-3
+           hover:bg-gray-100;
   }
 
   .btn-ghost {
     @apply btn-base bg-transparent text-primary-700 px-6 py-3
-           hover:bg-primary-50 focus:ring-primary-500;
+           hover:bg-primary-50;
   }
 
   .btn-danger {
     @apply btn-base bg-danger-600 text-white px-6 py-3
-           hover:bg-danger-700 focus:ring-danger-500;
+           hover:bg-danger-700;
   }
 
   .btn-sm {
@@ -54,9 +66,10 @@
 
   /* === INPUTS === */
   .input-base {
-    @apply w-full px-4 py-3 border border-gray-300 rounded-lg
-           bg-white text-gray-900 outline-none transition-colors
-           focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+    @apply w-full px-4 py-3 border border-subtle rounded-lg
+           bg-surface-1 text-gray-900 transition-colors duration-200 ease-out
+           focus:outline-2 focus:outline-primary-500 focus:outline-offset-2
+           focus:border-primary-500 focus:shadow-[0_0_0_4px_rgba(14,165,233,0.15)]
            disabled:opacity-50 disabled:bg-gray-50 disabled:cursor-not-allowed;
   }
 
@@ -70,7 +83,7 @@
 
   /* === CARDS === */
   .card {
-    @apply bg-white rounded-xl shadow-sm border border-gray-200 p-6;
+    @apply bg-surface-0 rounded-xl shadow-elevation-1 border border-subtle p-6;
   }
 
   .card-sm {
@@ -90,7 +103,7 @@
   }
 
   .card-interactive {
-    @apply hover:shadow-md hover:scale-[1.02] transition-all duration-200 cursor-pointer;
+    @apply hover:shadow-elevation-2 hover:scale-[1.01] transition-all duration-200 ease-out cursor-pointer;
   }
 
   /* === BADGES === */
@@ -121,5 +134,30 @@
   /* === ALERTS === */
   .alert-error {
     @apply bg-danger-50 border border-danger-200 text-danger-700 rounded-lg p-3;
+  }
+
+  /* === DS v1 — Calm Premium === */
+  .bg-app {
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, var(--df-bg-tint-1), transparent 70%),
+      radial-gradient(ellipse 60% 50% at 80% 80%, var(--df-bg-tint-2), transparent 70%),
+      linear-gradient(180deg, rgb(var(--df-surface-1)), rgb(var(--df-surface-0)));
+  }
+
+  .ring-soft {
+    @apply outline-2 outline-primary-500 outline-offset-2;
+    box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.15);
+  }
+}
+
+/* === DS v1 — Reduced Motion === */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

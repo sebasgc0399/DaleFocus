@@ -52,12 +52,29 @@ export default {
           600: '#dc2626',
           700: '#b91c1c',
         },
+        // DS v1 — Calm Premium surfaces
+        surface: {
+          0: 'rgb(var(--df-surface-0) / <alpha-value>)',
+          1: 'rgb(var(--df-surface-1) / <alpha-value>)',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
+      borderColor: {
+        subtle: 'rgb(var(--df-border-subtle) / <alpha-value>)',
+      },
       boxShadow: {
         soft: '0 2px 8px -2px rgba(0,0,0,0.08)',
+        'elevation-1': '0 1px 3px 0 rgba(0,0,0,0.06), 0 1px 2px -1px rgba(0,0,0,0.06)',
+        'elevation-2': '0 4px 12px -2px rgba(0,0,0,0.08), 0 2px 6px -2px rgba(0,0,0,0.04)',
+      },
+      transitionDuration: {
+        250: '250ms',
+        320: '320ms',
+      },
+      transitionTimingFunction: {
+        out: 'ease-out',
       },
     },
   },

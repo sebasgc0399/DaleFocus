@@ -21,7 +21,7 @@ import { Button } from './ui/Button';
 import { Badge } from './ui/Badge';
 
 function PomodoroTimer() {
-  const { activeStep, currentTask, setCurrentScreen, setRewardMessage } = useApp();
+  const { activeStep, currentTask, setCurrentScreen, setRewardMessage, replaceScreen } = useApp();
 
   // Configuracion del pomodoro (puede venir del perfil del usuario)
   const config = DEFAULT_POMODORO_CONFIG;
@@ -130,7 +130,7 @@ function PomodoroTimer() {
       }
     }
 
-    setCurrentScreen('steps');
+    replaceScreen('steps');
   };
 
   /**

@@ -4,8 +4,14 @@ import { parseAuthError } from '../utils/authErrors';
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Card } from './ui/Card';
+import { SegmentedTabs } from './ui/SegmentedTabs';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const LOGIN_TABS = [
+  { id: 'login', label: 'Iniciar Sesión' },
+  { id: 'register', label: 'Registrarse' },
+];
 
 function Login({ onSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -69,31 +75,14 @@ function Login({ onSuccess }) {
   return (
     <div className="max-w-md mx-auto">
       {/* Tabs */}
-      <div className="flex mb-6 rounded-lg overflow-hidden border border-gray-200">
-        <button
-          type="button"
+      <div className="mb-6">
+        <SegmentedTabs
+          tabs={LOGIN_TABS}
+          activeTab={isLogin ? 'login' : 'register'}
+          onChange={(tabId) => switchTab(tabId === 'login')}
           disabled={isLoading}
-          onClick={() => switchTab(true)}
-          className={`flex-1 py-3 text-sm font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-            isLogin
-              ? 'bg-primary-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          Iniciar Sesión
-        </button>
-        <button
-          type="button"
-          disabled={isLoading}
-          onClick={() => switchTab(false)}
-          className={`flex-1 py-3 text-sm font-semibold transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-            !isLogin
-              ? 'bg-primary-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
-        >
-          Registrarse
-        </button>
+          ariaLabel="Modo de autenticación"
+        />
       </div>
 
       {/* Form */}
