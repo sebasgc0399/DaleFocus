@@ -39,7 +39,13 @@
     "generating": "Generando plan..."
   },
   "errors": {
-    "atomizeFailed": "Hubo un error al generar tu plan. Intenta de nuevo."
+    "atomizeFailed": "Hubo un error al generar tu plan. Intenta de nuevo.",
+    "unauthenticated": "Tu sesion expiro. Inicia sesion de nuevo.",
+    "invalidInput": "El titulo de la tarea no es valido. Ajustalo e intenta de nuevo.",
+    "permissionDenied": "No tienes permisos para atomizar esta tarea.",
+    "aiNotConfigured": "El servicio de IA no esta disponible en este momento.",
+    "timeout": "La solicitud tardo demasiado. Intenta otra vez.",
+    "highDemand": "Hay alta demanda ahora. Intenta en un momento."
   },
   "stepList": {
     "defaultTaskTitle": "Tu tarea",

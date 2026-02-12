@@ -6,6 +6,25 @@ import { Button } from './ui/Button';
 import { Card } from './ui/Card';
 import { Input } from './ui/Input';
 
+function resolveTaskErrorKey(errorCode) {
+  switch (errorCode) {
+    case 'functions/unauthenticated':
+      return 'task:errors.unauthenticated';
+    case 'functions/invalid-argument':
+      return 'task:errors.invalidInput';
+    case 'functions/permission-denied':
+      return 'task:errors.permissionDenied';
+    case 'functions/failed-precondition':
+      return 'task:errors.aiNotConfigured';
+    case 'functions/deadline-exceeded':
+      return 'task:errors.timeout';
+    case 'functions/resource-exhausted':
+      return 'task:errors.highDemand';
+    default:
+      return 'task:errors.atomizeFailed';
+  }
+}
+
 function TaskInput() {
   const { t } = useTranslation(['task', 'common']);
   const [taskTitle, setTaskTitle] = useState('');
@@ -30,8 +49,8 @@ function TaskInput() {
       setCurrentTask(result);
       setCurrentScreen('steps');
     } catch (err) {
-      setError('task.errors.atomizeFailed');
-      console.error('Error atomizing task:', err);
+      setError(resolveTaskErrorKey(err?.code));
+      console.error('Error atomizing task:', err?.code, err);
     } finally {
       setIsLoading(false);
     }

@@ -39,7 +39,13 @@
     "generating": "Generating plan..."
   },
   "errors": {
-    "atomizeFailed": "There was an error generating your plan. Please try again."
+    "atomizeFailed": "There was an error generating your plan. Please try again.",
+    "unauthenticated": "Your session expired. Please sign in again.",
+    "invalidInput": "Task title is invalid. Please adjust it and try again.",
+    "permissionDenied": "You do not have permission to atomize this task.",
+    "aiNotConfigured": "AI service is not available right now.",
+    "timeout": "The request took too long. Please try again.",
+    "highDemand": "There is high demand right now. Please try again shortly."
   },
   "stepList": {
     "defaultTaskTitle": "Your task",
