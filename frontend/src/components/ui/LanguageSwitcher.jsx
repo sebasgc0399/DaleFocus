@@ -1,4 +1,5 @@
-﻿import { useTranslation } from 'react-i18next';
+﻿import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from './Button';
 import { Card } from './Card';
 
@@ -13,6 +14,7 @@ function normalizeCurrentLanguage(language) {
 
 function LanguageSwitcher({ className = '' }) {
   const { t, i18n } = useTranslation('common');
+  const optionRefs = useRef([]);
 
   const currentLanguage = normalizeCurrentLanguage(i18n.resolvedLanguage || i18n.language);
 
@@ -36,7 +38,9 @@ function LanguageSwitcher({ className = '' }) {
 
     if (nextIndex >= 0) {
       event.preventDefault();
-      handleChangeLanguage(LANGUAGE_OPTIONS[nextIndex]);
+      const nextLanguage = LANGUAGE_OPTIONS[nextIndex];
+      handleChangeLanguage(nextLanguage);
+      optionRefs.current[nextIndex]?.focus();
     }
   };
 
@@ -53,6 +57,9 @@ function LanguageSwitcher({ className = '' }) {
         return (
           <Button
             key={language}
+            ref={(element) => {
+              optionRefs.current[index] = element;
+            }}
             type="button"
             size="sm"
             variant="ghost"

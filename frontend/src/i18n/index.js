@@ -53,7 +53,7 @@ if (!i18n.isInitialized) {
       fallbackNS: 'common',
       interpolation: { escapeValue: false },
       react: { useSuspense: false },
-      debug: import.meta.env.DEV,
+      debug: import.meta.env.DEV && import.meta.env.MODE !== 'test',
       returnNull: false,
       returnEmptyString: false,
     });

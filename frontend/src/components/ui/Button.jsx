@@ -1,4 +1,5 @@
-﻿import { useTranslation } from 'react-i18next';
+﻿import { forwardRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const VARIANT_CLASS = {
   primary: 'btn-primary',
@@ -13,7 +14,7 @@ const SIZE_CLASS = {
   lg: 'btn-lg',
 };
 
-function Button({
+const Button = forwardRef(function Button({
   variant = 'primary',
   size = 'md',
   fullWidth = false,
@@ -24,7 +25,7 @@ function Button({
   className,
   children,
   ...rest
-}) {
+}, ref) {
   const { t } = useTranslation('common');
 
   const classes = [
@@ -40,6 +41,7 @@ function Button({
 
   return (
     <button
+      ref={ref}
       type={type}
       disabled={disabled || loading}
       className={classes}
@@ -48,6 +50,8 @@ function Button({
       {loading ? resolvedLoadingText : children}
     </button>
   );
-}
+});
+
+Button.displayName = 'Button';
 
 export { Button };
